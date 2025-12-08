@@ -1,0 +1,280 @@
+.login-main {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-container {
+  width: 90%;
+  background-color: #fff;
+  border-radius: 2rem;
+  padding: 1rem 0rem;
+}
+
+.login-container .login-images {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row-reverse;
+  max-height: 12vh;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+.login-container .login-images .login-car {
+  height: 15vh;
+  width: 35vw;
+  margin-top: -1rem;
+}
+
+.login-container .login-images .login-logo {
+  height: 15vh;
+  width: 25vw;
+  margin-top: -1rem;
+}
+
+.login-container .login-text {
+  padding: 1rem 2rem;
+}
+
+.login-container .login-text h3 {
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.login-container .login-text p {
+  font-size: 0.6rem;
+  font-weight: 300;
+}
+
+.login-form-container {
+  width: 100%;
+  padding: 0.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-family: sans-serif;
+
+}
+
+.login-input-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Floating input label */
+.login-floating {
+  position: relative;
+}
+
+.login-floating label {
+  position: absolute;
+  top: -0.6rem;
+  left: 0.85rem;
+  background-color: white;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  color: #555;
+  pointer-events: none;
+}
+
+.login-input-group input {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 1rem;
+  height: 5vh;
+  width: 100%;
+}
+
+.login-input-group input:focus {
+  border-color: #777;
+  outline: none;
+}
+
+/* Error messages */
+.login-error-text {
+  color: #ff4b4b;
+  font-size: 0.7rem;
+  margin-top: 2px;
+}
+
+.login-api-error {
+  color: #ff4b4b;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+/* Submit Button */
+.login-submit-btn {
+  width: 100%;
+  background-color: #ff7a00;
+  color: white;
+  border: none;
+  padding: 0.4rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.login-submit-btn:hover {
+  background-color: #e26d00;
+}
+
+/* Already account */
+.login-already-acc {
+  padding: 0.2rem 2rem;
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: center;
+}
+
+.login-already-acc span {
+  color: #e26d00;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* OR Divider */
+.login-with {
+  font-size: 0.7rem;
+  display: flex;
+  padding: 0.2rem 2rem;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  color: rgba(0, 0, 0, 0.719);
+}
+
+.login-with p {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.login-line {
+  height: 1px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.252);
+}
+
+/* Google login */
+.login-google {
+  width: 100%;
+  padding: 0.5rem 2rem;
+}
+
+.login-google .login-img-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #3869eb;
+  padding: 0.3rem;
+}
+
+.login-google img {
+  height: 2vh;
+}
+
+/* Responsive (Desktop) */
+@media (min-width: 1024px) {
+  .login-main {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .login-container {
+    min-height: 70vh;
+    width: 60vw;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 1rem;
+  }
+
+  .login-container .login-images {
+ 
+    max-height: 11vh;
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .login-container .login-images .login-car {
+    height: 60vh;
+    width: 28vw;
+   margin-right: -1rem;
+margin-top: 1rem;
+  }
+
+  .login-container .login-images .login-logo {
+    height: 15vh;
+    width: 15vw;
+    margin-top: -2rem;
+  }
+
+  .login-container .login-text {
+    padding: 0rem 2rem;
+    width: 64%;
+    margin-bottom: 0.5rem;
+  }
+
+  .login-container .login-text h3 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+  }
+
+  .login-container .login-text p {
+    font-size: 0.65rem;
+    font-weight: 400;
+  }
+
+  .login-forms {
+    width: 65%;
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: start;
+    align-items: flex-start;
+  }
+
+  .login-form-container {
+ width: 80%;
+    padding: 0.8rem 2rem;
+    display: flex;
+    flex-direction: column;
+   
+    gap: 15px;
+  }
+
+  .login-input-group input {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .login-floating label {
+    top: -0.5rem;
+  }
+
+  .login-already-acc {
+    font-size: 0.8rem;
+    width: 54%;
+    margin-top: -0.6rem;
+  }
+
+  .login-with {
+    width: 52%;
+  }
+
+  .login-google {
+     width: 52%;
+    padding: 1rem 2rem;
+  }
+
+  .login-google img {
+    height: 3vh;
+  }
+}
