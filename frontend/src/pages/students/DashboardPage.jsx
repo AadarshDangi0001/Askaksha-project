@@ -1,32 +1,43 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
+
   const features = [
     {
       title: "Chat AI",
       number: "01",
       description: "24/7 available",
       color: "#FFE4C4",
+      route: "/student/chatbot",
     },
     {
       title: "Bullet Board",
       number: "02",
       description: "New Updates",
       color: "#FFE4C4",
+      route: "/student/bulletboard",
     },
     {
       title: "Volunteers Help",
       number: "03",
       description: "Connect with humans",
       color: "#FFE4C4",
+      route: "/student/volunteer",
     },
     {
       title: "Scan Docs",
       number: "04",
       description: "Get summary",
       color: "#FFE4C4",
+      route: "/student/scandocs",
     },
   ];
+
+  const handleFeatureClick = (route) => {
+    navigate(route);
+  };
 
   return (
     <div className="Dashboard w-screen   mt-15 h-[92vh] bg-[#E8FDFF] overflow-y-auto pb-10 lg:w-full">
@@ -66,7 +77,8 @@ const DashboardPage = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="DashboardBox bg-[#EFDEC2] rounded-2xl lg:rounded-3xl p-6 lg:p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                onClick={() => handleFeatureClick(feature.route)}
+                className="DashboardBox bg-[#EFDEC2] rounded-2xl lg:rounded-3xl p-6 lg:p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer hover:scale-105 active:scale-95"
               >
                 <h3 className="text-sm lg:text-xl font-bold text-gray-900 mb-2">
                   {feature.title}
