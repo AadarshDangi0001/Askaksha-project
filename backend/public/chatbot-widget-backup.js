@@ -11,10 +11,10 @@
   function initWidget() {
     // Configuration
     const CONFIG = {
-      API_URL: 'http://localhost:5050',
-      SOCKET_URL: 'http://localhost:5050',
-      collegeCode: window.CHATBOT_COLLEGE_CODE || 'GUEST',
-    };
+    API_URL: window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com',
+    SOCKET_URL: window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com',
+    collegeCode: window.CHATBOT_COLLEGE_CODE || 'GUEST',
+  };
 
   // Create widget styles
   const styles = `
