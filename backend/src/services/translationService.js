@@ -1,19 +1,31 @@
-const axios = require('axios');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 class TranslationService {
   constructor() {
-    this.baseURL = process.env.TRANSLATION_API_URL || 'http://localhost:5001';
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   }
 
   /**
-   * Detect language of the text
+   * Detect language using Gemini
    */
   async detectLanguage(text) {
     try {
-      const response = await axios.post(`${this.baseURL}/detect-language`, {
-        text: text
-      });
-      return response.data.detected_language || 'en';
+      const prompt = `Detect the language of this text and respond with ONLY the ISO 639-1 language code (e.g., 'en', 'hi', 'ta', 'bn', etc.):
+
+Text: "${text}"
+
+Respond with ONLY the 2-letter language code, nothing else.`;
+
+      const result = await this.model.generateContent(prompt);
+      const detectedLang = result.response.text().trim().toLowerCase();
+      
+      // Validate it's a 2-letter code
+      if (detectedLang.length === 2) {
+        return detectedLang;
+      }
+      
+      return 'en'; // Default to English if invalid
     } catch (error) {
       console.error('Language detection error:', error.message);
       return 'en'; // Default to English on error
@@ -21,20 +33,36 @@ class TranslationService {
   }
 
   /**
-   * Translate user input from native language to English
+   * Translate user input from native language to English using Gemini
    */
   async translateToEnglish(text) {
     try {
-      // First detect if translation is needed
-      const response = await axios.post(`${this.baseURL}/translate/to-english`, {
-        text: text
-      });
+      // First detect language
+      const detectedLanguage = await this.detectLanguage(text);
+      
+      // If already English, return as is
+      if (detectedLanguage === 'en') {
+        return {
+          originalText: text,
+          translatedText: text,
+          detectedLanguage: 'en',
+          isEnglish: true
+        };
+      }
+
+      // Translate to English
+      const prompt = `Translate this text to English. Respond with ONLY the translated text, no explanations:
+
+"${text}"`;
+
+      const result = await this.model.generateContent(prompt);
+      const translatedText = result.response.text().trim();
 
       return {
-        originalText: response.data.original_text,
-        translatedText: response.data.translated_text,
-        detectedLanguage: response.data.detected_language,
-        isEnglish: response.data.is_english
+        originalText: text,
+        translatedText: translatedText,
+        detectedLanguage: detectedLanguage,
+        isEnglish: false
       };
     } catch (error) {
       console.error('Translation to English error:', error.message);
@@ -49,7 +77,7 @@ class TranslationService {
   }
 
   /**
-   * Translate AI response from English to user's native language
+   * Translate AI response from English to user's native language using Gemini
    */
   async translateToNative(text, targetLanguage) {
     try {
@@ -62,15 +90,35 @@ class TranslationService {
         };
       }
 
-      const response = await axios.post(`${this.baseURL}/translate/to-native`, {
-        text: text,
-        target_language: targetLanguage
-      });
+      // Map common language codes to full names
+      const languageMap = {
+        'hi': 'Hindi',
+        'ta': 'Tamil',
+        'te': 'Telugu',
+        'bn': 'Bengali',
+        'mr': 'Marathi',
+        'gu': 'Gujarati',
+        'kn': 'Kannada',
+        'ml': 'Malayalam',
+        'pa': 'Punjabi',
+        'or': 'Odia',
+        'as': 'Assamese',
+        'ur': 'Urdu'
+      };
+
+      const languageName = languageMap[targetLanguage] || targetLanguage;
+
+      const prompt = `Translate this English text to ${languageName}. Respond with ONLY the translated text, maintain the same tone and meaning:
+
+"${text}"`;
+
+      const result = await this.model.generateContent(prompt);
+      const translatedText = result.response.text().trim();
 
       return {
-        originalText: response.data.original_text,
-        translatedText: response.data.translated_text,
-        targetLanguage: response.data.target_language
+        originalText: text,
+        translatedText: translatedText,
+        targetLanguage: targetLanguage
       };
     } catch (error) {
       console.error('Translation to native error:', error.message);
@@ -95,7 +143,8 @@ class TranslationService {
 
       // If language not provided, detect it
       if (!targetLang) {
-        targetLang = await this.detectLanguage(userInput);
+        const result = await this.translateToEnglish(userInput);
+        targetLang = result.detectedLanguage;
       }
 
       // Translate AI response to native language
