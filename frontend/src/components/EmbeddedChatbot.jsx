@@ -11,8 +11,11 @@ const EmbeddedChatbot = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [chatId] = useState(() => `chat_${Date.now()}`);
+  const [showWhatsAppPopup, setShowWhatsAppPopup] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('1234567890');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const fallbackTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && !socket) {
@@ -32,8 +35,16 @@ const EmbeddedChatbot = () => {
       });
 
       newSocket.on('chat-response', (data) => {
+        // Clear fallback timeout on response
+        if (fallbackTimeoutRef.current) {
+          clearTimeout(fallbackTimeoutRef.current);
+          fallbackTimeoutRef.current = null;
+        }
+
         if (data.error) {
           setMessages(prev => [...prev, { type: 'bot', text: `Error: ${data.message}` }]);
+          // Show WhatsApp popup on error
+          setShowWhatsAppPopup(true);
         } else {
           setMessages(prev => [...prev, { type: 'bot', text: data.message }]);
         }
@@ -85,6 +96,16 @@ const EmbeddedChatbot = () => {
           chat: chatId,
           token: token
         });
+
+        // Set fallback timeout (15 seconds)
+        fallbackTimeoutRef.current = setTimeout(() => {
+          setIsAnalyzing(false);
+          setMessages(prev => [...prev, { 
+            type: 'bot', 
+            text: "I'm having trouble responding right now. Would you like to chat with us on WhatsApp?" 
+          }]);
+          setShowWhatsAppPopup(true);
+        }, 15000);
       }
       
       setInput('');
@@ -166,6 +187,12 @@ const EmbeddedChatbot = () => {
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
+  };
+
+  const openWhatsApp = () => {
+    const message = encodeURIComponent('Hi, I need help with the chatbot.');
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    setShowWhatsAppPopup(false);
   };
 
   return (
@@ -260,6 +287,38 @@ const EmbeddedChatbot = () => {
             
             <div ref={messagesEndRef} />
           </div>
+
+          {/* WhatsApp Fallback Popup */}
+          {showWhatsAppPopup && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-2xl">
+              <div className="bg-white rounded-xl p-6 m-4 max-w-sm shadow-2xl animate-bounce-in">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                    <i className="ri-whatsapp-line text-white text-3xl"></i>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Need Help?</h3>
+                  <p className="text-gray-600 mb-6">
+                    Our chatbot is having trouble. Chat with us directly on WhatsApp for instant support!
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowWhatsAppPopup(false)}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Continue Here
+                    </button>
+                    <button
+                      onClick={openWhatsApp}
+                      className="flex-1 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <i className="ri-whatsapp-line text-xl"></i>
+                      Open WhatsApp
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* File Preview */}
           {selectedFile && (

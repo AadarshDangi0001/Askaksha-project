@@ -52,9 +52,12 @@ const ScanDocs = () => {
   const [error, setError] = useState(null);
   const [socket, setSocket] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [showWhatsAppPopup, setShowWhatsAppPopup] = useState(false);
+  const [whatsappNumber] = useState('1234567890');
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const fallbackTimeoutRef = useRef(null);
 
   // Initialize Socket.IO connection
   useEffect(() => {
@@ -69,11 +72,19 @@ const ScanDocs = () => {
     });
 
     newSocket.on('chat-response', (response) => {
+      // Clear fallback timeout
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+        fallbackTimeoutRef.current = null;
+      }
+
       setIsLoading(false);
       
       if (response.error) {
         setError(response.message);
         setOutput("❌ " + response.message);
+        // Show WhatsApp popup on error
+        setShowWhatsAppPopup(true);
       } else {
         setOutput(response.message);
         setError(null);
@@ -153,6 +164,14 @@ const ScanDocs = () => {
 
         // Send to backend via Socket.IO
         socket.emit('student-message', messagePayload);
+
+        // Set fallback timeout (15 seconds)
+        fallbackTimeoutRef.current = setTimeout(() => {
+          setIsLoading(false);
+          setOutput("I'm having trouble analyzing this file. Would you like to chat with us on WhatsApp?");
+          setError("Analysis timeout");
+          setShowWhatsAppPopup(true);
+        }, 15000);
       };
 
       reader.onerror = () => {
@@ -221,6 +240,12 @@ const ScanDocs = () => {
         await analyzeFile(file);
       }, 'image/jpeg', 0.95);
     }
+  };
+
+  const openWhatsApp = () => {
+    const message = encodeURIComponent('Hi, I need help with document scanning.');
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    setShowWhatsAppPopup(false);
   };
 
   return (
@@ -407,6 +432,38 @@ const ScanDocs = () => {
             )}
           </div>
         </div>
+
+        {/* WhatsApp Fallback Popup */}
+        {showWhatsAppPopup && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 m-4 max-w-md w-full shadow-2xl">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <i className="ri-whatsapp-line text-white text-4xl"></i>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-3">Need Help?</h3>
+                <p className="text-gray-600 mb-6 leading-relaxed">
+                  Having trouble with document analysis? Chat with us directly on WhatsApp for instant support!
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowWhatsAppPopup(false)}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    onClick={openWhatsApp}
+                    className="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <i className="ri-whatsapp-line text-2xl"></i>
+                    WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

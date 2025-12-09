@@ -540,24 +540,67 @@
       selectedFile: null,
       previewUrl: null,
       chatId: `chat_${Date.now()}`,
-      messages: []
+      messages: [],
+      showWhatsAppPopup: false,
+      whatsappNumber: '1234567890',
+      fallbackTimeout: null,
+      guestToken: null,
+      isInitialized: false
     },
 
     loadSocketIO: function() {
       const script = document.createElement('script');
       script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
       script.onload = () => {
-        this.connectSocket();
+        this.initializeGuestSession();
       };
       document.head.appendChild(script);
     },
 
+    initializeGuestSession: async function() {
+      try {
+        // Create guest student session
+        const response = await fetch(`${this.config.serverUrl}/api/guest/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            collegeCode: this.config.collegeCode
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create guest session');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          this.state.guestToken = data.token;
+          this.state.chatId = data.chatId;
+          this.state.isInitialized = true;
+          this.connectSocket();
+        } else {
+          console.error('Guest session creation failed:', data.message);
+          this.addMessage('bot', 'Failed to initialize chatbot. Please refresh the page.');
+        }
+      } catch (error) {
+        console.error('Error initializing guest session:', error);
+        this.addMessage('bot', 'Failed to connect to chatbot. Please try again later.');
+      }
+    },
+
     connectSocket: function() {
+      if (!this.state.isInitialized || !this.state.guestToken) {
+        console.error('Cannot connect: Guest session not initialized');
+        return;
+      }
+
       const socket = io(this.config.serverUrl, {
         auth: { 
-          collegeCode: this.config.collegeCode,
-          guestMode: true 
-        }
+          token: this.state.guestToken
+        },
+        transports: ['websocket', 'polling']
       });
 
       socket.on('connect', () => {
@@ -574,6 +617,11 @@
       });
 
       socket.on('chat-response', (data) => {
+        // Clear fallback timeout
+        if (this.state.fallbackTimeout) {
+          clearTimeout(this.state.fallbackTimeout);
+          this.state.fallbackTimeout = null;
+        }
         this.handleBotResponse(data);
       });
     },
@@ -594,19 +642,37 @@
     },
 
     sendTextMessage: function(message) {
+      if (!this.state.guestToken) {
+        this.addMessage('bot', 'Session expired. Please refresh the page.');
+        return;
+      }
+
       this.addMessage('user', message);
       this.showTyping();
 
       if (this.state.socket && this.state.isConnected) {
-        this.state.socket.emit('guest-message', {
+        this.state.socket.emit('student-message', {
           content: message,
           chat: this.state.chatId,
-          collegeCode: this.config.collegeCode
+          token: this.state.guestToken
         });
+
+        // Set fallback timeout (15 seconds)
+        this.state.fallbackTimeout = setTimeout(() => {
+          this.hideTyping();
+          this.addMessage('bot', "I'm having trouble responding right now. Would you like to chat with us on WhatsApp?");
+          this.showWhatsAppPopup();
+        }, 15000);
       }
     },
 
     sendFileMessage: function(message) {
+      if (!this.state.guestToken) {
+        this.addMessage('bot', 'Session expired. Please refresh the page.');
+        this.clearFile();
+        return;
+      }
+
       const file = this.state.selectedFile;
       this.addMessage('user', message || 'Analyze this file', file.name);
       this.showTyping();
@@ -616,14 +682,21 @@
         const base64Data = reader.result.split(',')[1];
         
         if (this.state.socket && this.state.isConnected) {
-          this.state.socket.emit('guest-message', {
+          this.state.socket.emit('student-message', {
             content: message || 'Please analyze this file',
             chat: this.state.chatId,
-            collegeCode: this.config.collegeCode,
+            token: this.state.guestToken,
             fileData: base64Data,
             mimeType: file.type,
             fileName: file.name
           });
+
+          // Set fallback timeout for file analysis
+          this.state.fallbackTimeout = setTimeout(() => {
+            this.hideTyping();
+            this.addMessage('bot', "File analysis is taking longer than expected. Would you like to chat with us on WhatsApp?");
+            this.showWhatsAppPopup();
+          }, 15000);
         }
 
         this.clearFile();
@@ -635,6 +708,7 @@
       this.hideTyping();
       if (data.error) {
         this.addMessage('bot', `Error: ${data.message}`);
+        this.showWhatsAppPopup();
       } else {
         this.addMessage('bot', data.message);
       }
@@ -739,6 +813,71 @@
       this.state.previewUrl = null;
       document.getElementById('askaksha-chat-file').value = '';
       document.getElementById('askaksha-chat-preview').innerHTML = '';
+    },
+
+    showWhatsAppPopup: function() {
+      this.state.showWhatsAppPopup = true;
+      const messagesDiv = document.getElementById('askaksha-chat-messages');
+      
+      // Create popup overlay
+      let popup = document.getElementById('askaksha-whatsapp-popup');
+      if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'askaksha-whatsapp-popup';
+        popup.style.cssText = `
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          border-radius: 16px;
+        `;
+        popup.innerHTML = `
+          <div style="background: white; border-radius: 16px; padding: 32px; margin: 16px; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease;">
+            <div style="text-align: center;">
+              <div style="width: 80px; height: 80px; background: #25D366; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; animation: pulse 2s infinite;">
+                <svg style="width: 48px; height: 48px; fill: white;" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+              </div>
+              <h3 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 12px;">Need Help?</h3>
+              <p style="color: #6b7280; margin-bottom: 24px; line-height: 1.6;">
+                Our chatbot is having trouble. Chat with us directly on WhatsApp for instant support!
+              </p>
+              <div style="display: flex; gap: 12px;">
+                <button onclick="AskakshaChat.hideWhatsAppPopup()" style="flex: 1; padding: 12px 24px; border: 2px solid #d1d5db; background: white; border-radius: 8px; color: #374151; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                  Continue Here
+                </button>
+                <button onclick="AskakshaChat.openWhatsApp()" style="flex: 1; padding: 12px 24px; background: #25D366; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+                  <svg style="width: 24px; height: 24px; fill: white;" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                  WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        const chatWindow = document.getElementById('askaksha-chat-window');
+        if (chatWindow) {
+          chatWindow.appendChild(popup);
+        }
+      }
+    },
+
+    hideWhatsAppPopup: function() {
+      this.state.showWhatsAppPopup = false;
+      const popup = document.getElementById('askaksha-whatsapp-popup');
+      if (popup) popup.remove();
+    },
+
+    openWhatsApp: function() {
+      const message = encodeURIComponent('Hi, I need help with the chatbot.');
+      window.open(`https://wa.me/${this.state.whatsappNumber}?text=${message}`, '_blank');
+      this.hideWhatsAppPopup();
     }
   };
 
