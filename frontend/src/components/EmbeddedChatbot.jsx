@@ -20,7 +20,8 @@ const EmbeddedChatbot = () => {
   useEffect(() => {
     if (isOpen && !socket) {
       const token = localStorage.getItem('studentToken') || localStorage.getItem('token');
-      const newSocket = io('http://localhost:5050', {
+      const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com';
+      const newSocket = io(socketUrl, {
         auth: { token }
       });
 
