@@ -1,9 +1,43 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLocation, NavLink } from 'react-router-dom'
+import { studentAPI } from '../services/api'
 
 const StudentNav = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [studentInfo, setStudentInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch student info on component mount
+  useEffect(() => {
+    const fetchStudentInfo = async () => {
+      try {
+        // First try to get from localStorage
+        const storedInfo = localStorage.getItem('studentInfo');
+        if (storedInfo) {
+          setStudentInfo(JSON.parse(storedInfo));
+        }
+        
+        // Then fetch fresh data from backend
+        const data = await studentAPI.getDashboard();
+        const updatedInfo = {
+          name: data.studentName || data.student?.name,
+          email: data.student?.email,
+          collegeCode: data.collegeCode,
+          collegeName: data.collegeName
+        };
+        setStudentInfo(updatedInfo);
+        localStorage.setItem('studentInfo', JSON.stringify(updatedInfo));
+      } catch (error) {
+        console.error('Error fetching student info:', error);
+        // Keep using localStorage data if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentInfo();
+  }, []);
   
   // Map routes to page titles
   const pageTitles = {
@@ -55,16 +89,17 @@ const StudentNav = () => {
         {/* User Profile */}
         <div className='flex  items-center gap-2 lg:gap-3 bg-linear-to-r from-[#3B9FFF] to-[#5FB4FF] rounded-lg px-2 lg:px-4 py-2 cursor-pointer hover:opacity-90 transition-opacity'>
           <img 
-            src="/imgs/user-avatar.jpg" 
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(studentInfo?.name || 'Student')}&background=1e40af&color=fff&size=128`}
             alt="User" 
             className='w-10 h-10 rounded-full object-cover'
-            onError={(e) => {
-              e.target.src = 'https://ui-avatars.com/api/?name=Aadarsh&background=1e40af&color=fff&size=128'
-            }}
           />
           <div className='text-white hidden sm:block'>
-            <p className='font-semibold text-sm'>Aadarsh dangi</p>
-            <p className='text-xs opacity-90'>1023CS231001</p>
+            <p className='font-semibold text-sm'>
+              {loading ? 'Loading...' : (studentInfo?.name || 'Student')}
+            </p>
+            <p className='text-xs opacity-90'>
+              {studentInfo?.collegeCode || studentInfo?.email || ''}
+            </p>
           </div>
         </div>
       </div>
@@ -144,7 +179,7 @@ const StudentNav = () => {
                   <i className="ri-wechat-line text-l"></i>
                   <p className="text-sm font-medium">Volunteers Help</p>
                 </NavLink>
-                <NavLink 
+                {/* <NavLink 
                   to="/offline-bot" 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400 transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
@@ -159,7 +194,7 @@ const StudentNav = () => {
                 >
                   <i className="ri-computer-line text-l"></i>
                   <p className="text-sm font-medium">AI Agent</p>
-                </NavLink>
+                </NavLink> */}
                 <NavLink 
                   to="/about" 
                   onClick={() => setIsMobileMenuOpen(false)}

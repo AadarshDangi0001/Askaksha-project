@@ -1,42 +1,160 @@
 import React, { useState, useRef, useEffect } from "react";
+import io from "socket.io-client";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050';
+const SOCKET_URL = API_BASE_URL.replace('/api', '');
+
+// Format text with markdown-style formatting
+const formatText = (text) => {
+  if (!text) return null;
+  
+  const lines = text.split('\n');
+  
+  return lines.map((line, lineIndex) => {
+    if (!line.trim()) return <br key={lineIndex} />;
+    
+    const parts = [];
+    let currentIndex = 0;
+    
+    // Match **bold** text
+    const boldRegex = /\*\*(.+?)\*\*/g;
+    let match;
+    
+    while ((match = boldRegex.exec(line)) !== null) {
+      if (match.index > currentIndex) {
+        parts.push(line.substring(currentIndex, match.index));
+      }
+      parts.push(<strong key={`bold-${lineIndex}-${match.index}`} className="font-bold">{match[1]}</strong>);
+      currentIndex = match.index + match[0].length;
+    }
+    
+    if (currentIndex < line.length) {
+      parts.push(line.substring(currentIndex));
+    }
+    
+    return (
+      <div key={lineIndex} className="mb-1">
+        {parts.length > 0 ? parts : line}
+      </div>
+    );
+  });
+};
 
 const ChatbotPage = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [chats, setChats] = useState([
-    { _id: 1, title: "Chat 1 this is" },
-    { _id: 2, title: "Web accessibility" },
-    { _id: 3, title: "Design inspiration" },
-    { _id: 4, title: "What is machine" },
-  ]);
+  const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [error, setError] = useState(null);
 
   const chatEndRef = useRef(null);
+  const socketRef = useRef(null);
+
+  // Initialize Socket.IO connection
+  useEffect(() => {
+    const newSocket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    newSocket.on('connect', () => {
+      console.log('Connected to chat server');
+      setError(null);
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Disconnected from chat server');
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('Connection error:', err);
+      setError('Connection error. Please check if the server is running.');
+    });
+
+    newSocket.on('chat-response', (response) => {
+      setIsLoading(false);
+      
+      if (response.error) {
+        setMessages((prev) => [...prev, { 
+          role: "model", 
+          content: response.message,
+          isError: true
+        }]);
+      } else {
+        setMessages((prev) => [...prev, { 
+          role: "model", 
+          content: response.message,
+          detectedLanguage: response.detectedLanguage,
+          originalMessage: response.originalMessage
+        }]);
+      }
+    });
+
+    socketRef.current = newSocket;
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.close();
+    };
+  }, []);
 
   // Scroll to bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Generate unique chat ID
+  const generateChatId = () => {
+    return `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
   // Send message
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !socket) return;
+
+    const token = localStorage.getItem('token') || localStorage.getItem('studentToken');
+    
+    if (!token) {
+      setError('Please login to use the chatbot');
+      return;
+    }
+
+    // Create chat ID if not exists
+    let chatId = currentChatId;
+    if (!chatId) {
+      chatId = generateChatId();
+      setCurrentChatId(chatId);
+      
+      // Add to chats list with first message as title
+      const newChat = {
+        _id: chatId,
+        title: input.slice(0, 30) + (input.length > 30 ? '...' : ''),
+        createdAt: new Date()
+      };
+      setChats((prev) => [newChat, ...prev]);
+    }
 
     // Add user message to UI
-    setMessages((prev) => [...prev, { role: "user", content: input }]);
+    const userMessage = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
 
-    // Simulate loading
+    // Prepare message payload
+    const messagePayload = {
+      content: input,
+      chat: chatId,
+      token: token,
+    };
+
+    // Send to backend via Socket.IO
     setIsLoading(true);
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { role: "model", content: "This is a simulated AI response." },
-      ]);
-      setIsLoading(false);
-    }, 1000);
+    setError(null);
+    socket.emit('student-message', messagePayload);
 
     // Clear input
     setInput("");
@@ -44,12 +162,14 @@ const ChatbotPage = () => {
 
   // Create a new chat
   const handleNewChat = () => {
+    const newChatId = generateChatId();
     const newChat = {
-      _id: chats.length + 1,
-      title: `New Chat ${chats.length + 1}`,
+      _id: newChatId,
+      title: `New Chat`,
+      createdAt: new Date()
     };
     setChats((prev) => [newChat, ...prev]);
-    setCurrentChatId(newChat._id);
+    setCurrentChatId(newChatId);
     setMessages([]);
   };
 
@@ -76,6 +196,13 @@ const ChatbotPage = () => {
   return (
     <div className="w-screen bg-[#E8FDFF] h-[90vh]  mt-20 lg:w-full">
       <div className="h-[98%] w-full flex flex-col bg-[#CAECFF] lg:rounded-2xl relative">
+        {/* Error Banner */}
+        {error && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            {error}
+          </div>
+        )}
+
         {/* Welcome Text */}
         {!currentChatId && messages.length === 0 && (
           <div className="absolute w-full px-14 py-28 text-center lg:flex lg:flex-col lg:items-center">
@@ -93,13 +220,22 @@ const ChatbotPage = () => {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`max-w-[70%] md:max-w-[85%] p-3 rounded-xl wrap-break-word ${
+              className={`max-w-[70%] md:max-w-[85%] p-3 rounded-xl ${
                 msg.role === "user"
                   ? "self-end bg-[#FF993A] text-white"
+                  : msg.isError
+                  ? "self-start bg-red-100 text-red-800 border border-red-300"
                   : "self-start bg-gray-200 text-black"
               }`}
             >
-              {msg.content}
+              <div className="break-words leading-relaxed">
+                {msg.role === "user" ? msg.content : formatText(msg.content)}
+              </div>
+              {msg.detectedLanguage && msg.detectedLanguage !== 'en' && (
+                <div className="text-xs mt-2 opacity-70">
+                  Detected language: {msg.detectedLanguage}
+                </div>
+              )}
             </div>
           ))}
 
@@ -120,20 +256,23 @@ const ChatbotPage = () => {
           <form onSubmit={handleSend} className="w-full relative">
             <input
               type="text"
-              placeholder='Example: "Explain Quantum Computing"'
+              placeholder={socket ? 'Example: "Explain Quantum Computing"' : 'Connecting to server...'}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={isLoading}
-              className="h-12 rounded-lg px-4 w-full bg-[#D0E1E7] border border-black/30 disabled:bg-gray-300 disabled:text-gray-500"
+              disabled={isLoading || !socket}
+              className="h-12 rounded-lg px-4 pr-16 w-full bg-[#D0E1E7] border border-black/30 disabled:bg-gray-300 disabled:text-gray-500"
             />
-            <div
-              onClick={isLoading ? null : handleSend}
+            <button
+              type="submit"
+              disabled={isLoading || !socket || !input.trim()}
               className={`absolute h-8 w-8 ${
-                isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#FF993A] cursor-pointer"
-              } flex items-center justify-center right-4 top-2 rounded`}
+                isLoading || !socket || !input.trim()
+                  ? "bg-gray-400 cursor-not-allowed" 
+                  : "bg-[#FF993A] cursor-pointer hover:bg-[#e88a33]"
+              } flex items-center justify-center right-6 top-2 rounded transition-colors`}
             >
               <i className="ri-send-plane-2-fill text-white"></i>
-            </div>
+            </button>
           </form>
         </div>
 

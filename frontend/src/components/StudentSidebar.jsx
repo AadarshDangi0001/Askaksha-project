@@ -64,22 +64,22 @@ const StudentSidebar = () => {
 
              
 
-             <NavLink 
+             {/* <NavLink 
                to="/student/offline-bot"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-wifi-off-line text-l"></i>
                <p className="text-[1.5vh] font-medium">Offline Mode</p>
-             </NavLink>
+             </NavLink> */}
            </div>
            <div className="space-y-1">
-             <NavLink 
+             {/* <NavLink 
                to="/student/agentic"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-computer-line text-l"></i>
                <p className="text-[1.5vh] font-medium">AI Agent</p>
-             </NavLink>
+             </NavLink> */}
 
              <NavLink 
                to="/student/about"
