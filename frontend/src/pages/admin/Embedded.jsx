@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const Embedded = () => {
   const [collegeCode, setCollegeCode] = useState('');
   const [copied, setCopied] = useState(false);
-  const [serverUrl, setServerUrl] = useState('http://localhost:5050');
+  const [serverUrl, setServerUrl] = useState('https://askaksha-project.onrender.com');
 
   useEffect(() => {
     // Get college code from localStorage
@@ -170,7 +170,7 @@ const Embedded = () => {
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="http://localhost:5050"
+                placeholder="https://askaksha-project.onrender.com"
               />
               <p className="text-sm text-gray-500 mt-1">
                 Change this if you're hosting the chatbot on a different server
