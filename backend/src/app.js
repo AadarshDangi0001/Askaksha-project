@@ -32,6 +32,15 @@ app.use(express.json());
 // Serve static files (widget script)
 app.use(express.static(path.join(__dirname, "../public")));
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development"
+  });
+});
+
 // Routes
 app.use("/api/auth", require("./routes/adminRoutes"));
 app.use("/api/college", require("./routes/collegeRoutes"));
