@@ -59,6 +59,22 @@ export const adminAPI = {
       headers: getAuthHeaders()
     });
     return handleResponse(response);
+  },
+
+  getLogs: async () => {
+    const response = await fetch(`${API_BASE_URL}/auth/logs`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
+  getStudents: async () => {
+    const response = await fetch(`${API_BASE_URL}/auth/students`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
   }
 };
 

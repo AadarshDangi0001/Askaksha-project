@@ -127,3 +127,27 @@ exports.getDashboard = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: error.message });
   }
 };
+
+// Get All Students for Admin's College
+exports.getStudents = async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.admin.id);
+    if (!admin) {
+      return res.status(404).json({ msg: "Admin not found" });
+    }
+
+    const Student = require('../models/Student');
+    const students = await Student.find({ collegeCode: admin.collegeCode })
+      .select('name email createdAt')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: students.length,
+      students: students
+    });
+  } catch (error) {
+    console.error('Get students error:', error);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};

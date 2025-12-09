@@ -1,52 +1,57 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { adminAPI } from '../../services/api'
 
 const AssignVolunteer = () => {
   const [message, setMessage] = useState("");
+  const [volunteers, setVolunteers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Volunteers in state (so we can add / delete / update)
-  const [volunteers, setVolunteers] = useState([
-    {
-      id: 1,
-      name: "John Kappa",
-      avatar: "https://ui-avatars.com/api/?name=John+Kappa&background=3B7DDD&color=ffffff",
-      assigned: false,
-    },
-    {
-      id: 2,
-      name: "Alex Paul",
-      avatar: "https://ui-avatars.com/api/?name=Alex+Paul&background=3B7DDD&color=ffffff",
-      assigned: false,
-    },
-    {
-      id: 3,
-      name: "Sara Smith",
-      avatar: "https://ui-avatars.com/api/?name=Sara+Smith&background=3B7DDD&color=ffffff",
-      assigned: false,
-    },
-    {
-      id: 4,
-      name: "David Lee",
-      avatar: "https://ui-avatars.com/api/?name=David+Lee&background=3B7DDD&color=ffffff",
-      assigned: false,
-    },
-  ]);
+  // Load students from backend
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
-  // Add new volunteer from input
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await adminAPI.getStudents();
+      
+      if (response.success && response.students) {
+        // Map students to volunteers format
+        const studentsData = response.students.map(student => ({
+          id: student._id,
+          name: student.name,
+          email: student.email,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=3B7DDD&color=ffffff`,
+          assigned: false,
+        }));
+        setVolunteers(studentsData);
+      } else {
+        setVolunteers([]);
+      }
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      setError(err.message || "Failed to load students");
+      setVolunteers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add new volunteer from input (removed - now showing only real students)
   const handleSendMessage = (e) => {
     e.preventDefault();
     const trimmed = message.trim();
     if (!trimmed) return;
 
-    const newVolunteer = {
-      id: Date.now(),
-      name: trimmed,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        trimmed
-      )}&background=3B7DDD&color=ffffff`,
-      assigned: false,
-    };
-
-    setVolunteers((prev) => [...prev, newVolunteer]);
+    // Filter students by search
+    const filtered = volunteers.filter(v => 
+      v.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+      v.email.toLowerCase().includes(trimmed.toLowerCase())
+    );
+    
     setMessage("");
   };
 
@@ -62,14 +67,62 @@ const AssignVolunteer = () => {
     setVolunteers((prev) => prev.filter((v) => v.id !== id));
   };
 
+  // Filter volunteers based on search
+  const filteredVolunteers = message.trim() 
+    ? volunteers.filter(v => 
+        v.name.toLowerCase().includes(message.toLowerCase()) ||
+        v.email.toLowerCase().includes(message.toLowerCase())
+      )
+    : volunteers;
+
   return (
     <div className="w-full mt-10 min-h-screen bg-[#E8FDFF] overflow-y-auto pb-24">
       {/* Main Container */}
       <div className="w-full px-8 lg:px-16 py-6 mt-20 lg:mt-6">
 
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">Assign Volunteers</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {loading ? "Loading students..." : `${volunteers.length} students in your college`}
+          </p>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading students...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 rounded-2xl p-6 text-center mb-6">
+            <p className="text-red-600 mb-3">{error}</p>
+            <button
+              onClick={fetchStudents}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && volunteers.length === 0 && (
+          <div className="bg-white rounded-2xl p-8 text-center">
+            <p className="text-gray-600">No students found in your college.</p>
+            <p className="text-sm text-gray-500 mt-2">Students will appear here after they register.</p>
+          </div>
+        )}
+
         {/* Volunteers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-24">
-          {volunteers.map((user) => (
+        {!loading && !error && filteredVolunteers.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-24">
+          {filteredVolunteers.map((user) => (
             <div
               key={user.id}
               className="bg-[#CAECFF] rounded-3xl p-6 lg:p-8 shadow-md hover:shadow-xl transition-all duration-300"
@@ -83,9 +136,12 @@ const AssignVolunteer = () => {
                     alt={user.name}
                     className="w-12 h-12 rounded-full bg-[#EFDEC2]"
                   />
-                  <h3 className="font-bold text-lg text-gray-900">
-                    {user.name}
-                  </h3>
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-900">
+                      {user.name}
+                    </h3>
+                    <p className="text-xs text-gray-600">{user.email}</p>
+                  </div>
                 </div>
 
                 {/* Right: Actions */}
@@ -101,22 +157,22 @@ const AssignVolunteer = () => {
                   >
                     {user.assigned ? "Assigned" : "Assign"}
                   </button>
-
-                  <button
-  onClick={() => handleDelete(user.id)}
-  className="w-10 h-10 flex items-center justify-center  rounded-lg hover:bg-red-50 transition-colors"
->
-  <i className="ri-delete-bin-6-line text-black text-lg"></i>
-</button>
-
                 </div>
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
+
+        {/* No Results for Search */}
+        {!loading && !error && message.trim() && filteredVolunteers.length === 0 && (
+          <div className="bg-white rounded-2xl p-6 text-center">
+            <p className="text-gray-600">No students found matching "{message}"</p>
+          </div>
+        )}
       </div>
 
-      {/* Fixed Input at Bottom */}
+      {/* Fixed Search Input at Bottom */}
       <div className="fixed bottom-0 z-40 w-screen right-0 bg-[#E8FDFF] border-t border-gray-200 py-4 px-8 lg:px-16 lg:w-[82vw]">
         <form
           onSubmit={handleSendMessage}
@@ -126,14 +182,19 @@ const AssignVolunteer = () => {
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type student name to add as volunteer"
+            placeholder="Search students by name or email..."
             className="w-full h-14 rounded-xl px-6 pr-16 bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF9D5C] text-gray-700 placeholder-gray-500"
           />
           <button
-            type="submit"
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#3B7DDD] hover:bg-[#3B7DDD] text-white w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
+            type="button"
+            onClick={() => setMessage("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#3B7DDD] hover:bg-[#5A97E4] text-white w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
           >
-            <i className="ri-send-plane-2-fill text-lg"></i>
+            {message ? (
+              <i className="ri-close-line text-lg"></i>
+            ) : (
+              <i className="ri-search-line text-lg"></i>
+            )}
           </button>
         </form>
       </div>

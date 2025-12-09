@@ -19,4 +19,7 @@ router.get("/dashboard", auth, adminController.getDashboard);
 // Get Chat Logs
 router.get("/logs", auth, getChatLogs);
 
+// Get All Students
+router.get("/students", auth, adminController.getStudents);
+
 module.exports = router;

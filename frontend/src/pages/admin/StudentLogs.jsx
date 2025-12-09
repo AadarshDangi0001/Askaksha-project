@@ -1,11 +1,17 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { adminAPI } from "../../services/api";
 
 const StudentLogs = () => {
-  const [activeFilter, setActiveFilter] = useState("24h");
+  const [activeFilter, setActiveFilter] = useState("1h");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("logs"); // 'logs' | 'faq'
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const FILTERS = [
+    { id: "1h", label: "Last 1 hour" },
+    { id: "12h", label: "Last 12 hours" },
     { id: "24h", label: "Last 24 hours" },
     { id: "7d", label: "Last 7 days" },
     { id: "1m", label: "Last 1 month" },
@@ -14,38 +20,40 @@ const StudentLogs = () => {
     { id: "all", label: "All" },
   ];
 
-  // Sample logs data (only queries, no names / no IDs)
+  // Load student logs from backend
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await adminAPI.getLogs();
+      
+      if (response.success && response.messages) {
+        // Filter only user messages (student queries), not bot responses
+        const userMessages = response.messages
+          .filter(msg => msg.role === 'user')
+          .map(msg => ({
+            query: msg.content,
+            createdAt: new Date(msg.createdAt)
+          }));
+        setLogs(userMessages);
+      } else {
+        setLogs([]);
+      }
+    } catch (err) {
+      console.error("Error fetching logs:", err);
+      setError(err.message || "Failed to load student logs");
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sample logs data (only queries, no names / no IDs) - REMOVED, now using backend data
   const now = new Date();
-  const logs = [
-    {
-      query: "How can I download my previous semester result from the portal?",
-      createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
-    },
-    {
-      query: "What is the last date to pay the exam fee without late fine?",
-      createdAt: new Date(now.getTime() - 25 * 60 * 60 * 1000), // 25 hours ago
-    },
-    {
-      query: "How to apply for re-evaluation for maths paper?",
-      createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-    },
-    {
-      query: "I am not able to login to the student portal, what should I do?",
-      createdAt: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000), // 12 days ago
-    },
-    {
-      query: "Is attendance mandatory in practical classes also?",
-      createdAt: new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000), // 35 days ago
-    },
-    {
-      query: "Can I change my registered email ID in the system?",
-      createdAt: new Date(now.getTime() - 80 * 24 * 60 * 60 * 1000), // ~3 months ago
-    },
-    {
-      query: "How to download fee receipt for hostel payment?",
-      createdAt: new Date(now.getTime() - 150 * 24 * 60 * 60 * 1000), // ~5 months ago
-    },
-  ];
 
   // Sample FAQs
   const faqs = [
@@ -68,12 +76,17 @@ const StudentLogs = () => {
   ];
 
   const filteredLogs = useMemo(() => {
-    const msInDay = 24 * 60 * 60 * 1000;
+    const msInHour = 60 * 60 * 1000;
+    const msInDay = 24 * msInHour;
 
     return logs.filter((log) => {
       const diff = now - log.createdAt;
 
       switch (activeFilter) {
+        case "1h":
+          return diff <= msInHour;
+        case "12h":
+          return diff <= 12 * msInHour;
         case "24h":
           return diff <= msInDay;
         case "7d":
@@ -102,7 +115,7 @@ const StudentLogs = () => {
   };
 
   const activeLabel =
-    FILTERS.find((f) => f.id === activeFilter)?.label || "Last 24 hours";
+    FILTERS.find((f) => f.id === activeFilter)?.label || "Last 1 hour";
 
   const logsSubtitle = "Showing queries based on selected time range.";
   const faqSubtitle = "Most common questions asked by students.";
@@ -202,7 +215,22 @@ const StudentLogs = () => {
           <div className="mt-2 flex-1 overflow-y-auto space-y-3 pr-1">
             {activeTab === "logs" ? (
               // Student Logs View
-              filteredLogs.length === 0 ? (
+              loading ? (
+                <div className="bg-white/70 rounded-2xl p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3"></div>
+                  <p className="text-sm text-gray-600">Loading student logs...</p>
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 rounded-2xl p-4 text-center">
+                  <p className="text-sm text-red-600">{error}</p>
+                  <button
+                    onClick={fetchLogs}
+                    className="mt-2 text-xs text-blue-600 hover:underline"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : filteredLogs.length === 0 ? (
                 <div className="bg-white/70 rounded-2xl p-4 text-center text-sm text-gray-700">
                   No queries found for{" "}
                   <span className="font-semibold">{activeLabel}</span>.

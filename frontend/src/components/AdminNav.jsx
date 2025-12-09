@@ -1,19 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
+import { adminAPI } from "../services/api";
 
 const AdminNav = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [adminName, setAdminName] = useState("Admin");
+
+  useEffect(() => {
+    fetchAdminInfo();
+  }, []);
+
+  const fetchAdminInfo = async () => {
+    try {
+      // First try from localStorage
+      const adminInfo = localStorage.getItem("adminInfo");
+      if (adminInfo) {
+        const parsed = JSON.parse(adminInfo);
+        setAdminName(parsed.name || "Admin");
+      } else {
+        // Fetch from API
+        const response = await adminAPI.getProfile();
+        setAdminName(response.name || "Admin");
+      }
+    } catch (error) {
+      console.error("Error fetching admin info:", error);
+      // Keep default "Admin" name
+    }
+  };
 
   const pageTitles = {
-    "/admin-dashboard": "Dashboard",
-    "/admin-bulletboard": "Bulletin Board",
-    "/assign-volunteers": "Assign Volunteers",
-    "/upgrade-data": "Upgrade Data",
-    "/about": "About Us",
-    "/settings": "Settings",
-    "/embedded-bot": "Embedded Bot",
-    "/student-logs": "Student Logs",
+    "/admin/dashboard": "Dashboard",
+    "/admin/bulletboard": "Bulletin Board",
+    "/admin/assign-volunteers": "Assign Volunteers",
+    "/admin/upgrade-data": "Upgrade Data",
+    "/admin/about": "About Us",
+    "/admin/settings": "Settings",
+    "/admin/embedded": "Embedded Bot",
+    "/admin/student-logs": "Student Logs",
+    "/admin/whatsapp-bot": "WhatsApp Bot",
   };
 
   const currentPageTitle = pageTitles[location.pathname] || "Dashboard";
@@ -57,12 +82,11 @@ const AdminNav = () => {
             className="w-10 h-10 rounded-full object-cover"
             onError={(e) => {
               e.target.src =
-                "https://ui-avatars.com/api/?name=Aadarsh&background=1e40af&color=fff&size=128";
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(adminName)}&background=1e40af&color=fff&size=128`;
             }}
           />
           <div className="text-white hidden sm:block">
-            <p className="font-semibold text-sm">Aadarsh dangi</p>
-            <p className="text-xs opacity-90">1023CS231001</p>
+            <p className="font-semibold text-sm">{adminName}</p>
           </div>
         </div>
       </div>
@@ -97,14 +121,14 @@ const AdminNav = () => {
 
               <div className="space-y-1">
                 {[
-                  { label: "Dashboard", icon: "ri-dashboard-line", link: "/admin-dashboard" },
-                  { label: "Bulletin Board", icon: "ri-book-open-line", link: "/admin-bulletboard" },
-                  { label: "Assign Volunteers", icon: "ri-team-line", link: "/assign-volunteers" },
-                  { label: "Upgrade Data", icon: "ri-upload-cloud-2-line", link: "/upgrade-data" },
-                  { label: "Student Logs", icon: "ri-wifi-off-line", link: "/student-logs" },
-                  { label: "WhatsApp Bot", icon: "ri-whatsapp-line", link: "/admin-whatsapp-bot" },
-                  { label: "Embedded Bot", icon: "ri-wechat-2-line", link: "/embedded-bot" },
-                  { label: "About Us", icon: "ri-information-line", link: "/about" },
+                  { label: "Dashboard", icon: "ri-dashboard-line", link: "/admin/dashboard" },
+                  { label: "Bulletin Board", icon: "ri-book-open-line", link: "/admin/bulletboard" },
+                  { label: "Assign Volunteers", icon: "ri-team-line", link: "/admin/assign-volunteers" },
+                  { label: "Upgrade Data", icon: "ri-upload-cloud-2-line", link: "/admin/upgrade-data" },
+                  { label: "Student Logs", icon: "ri-wifi-off-line", link: "/admin/student-logs" },
+                  { label: "WhatsApp Bot", icon: "ri-whatsapp-line", link: "/admin/whatsapp-bot" },
+                  { label: "Embedded Bot", icon: "ri-wechat-2-line", link: "/admin/embedded" },
+                  { label: "About Us", icon: "ri-information-line", link: "/admin/about" },
                 ].map((nav, index) => (
                   <NavLink
                     key={index}
@@ -125,7 +149,7 @@ const AdminNav = () => {
               {/* Settings */}
               <div className="mt-6 pt-4 border-t border-gray-800">
                 <NavLink
-                  to="/settings"
+                  to="/admin/settings"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400 transition-colors ${
