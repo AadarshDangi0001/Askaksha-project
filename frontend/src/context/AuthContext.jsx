@@ -23,6 +23,12 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('studentToken');
+    localStorage.removeItem('adminInfo');
+    localStorage.removeItem('studentInfo');
+    localStorage.removeItem('collegeInfo');
+    localStorage.removeItem('collegeCode');
   };
 
   const signup = (userData) => {

@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { adminAPI, studentAPI } from "../../services/api";
 import "./../../styles/loginpage.css";
-
-// Future backend URL
-const LOGIN_API_URL = "https://your-backend.com/api/auth/login";
-const USE_BACKEND = false;
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const [role, setRole] = useState("student");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -19,6 +17,12 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRoleChange = (selectedRole) => {
+    setRole(selectedRole);
+    setErrors({});
+    setApiError("");
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -66,40 +70,35 @@ const LoginPage = () => {
 
     setIsSubmitting(true);
 
-    if (!USE_BACKEND) {
-      console.log("Mock login (no backend yet):", formData);
-      const userData = {
-        email: formData.email,
-        firstName: formData.email.split('@')[0],
-        lastName: ""
-      };
-      login(userData);
-      navigate("/dashboard");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      const response = await fetch(LOGIN_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email.trim(),
-          password: formData.password,
-        }),
-        credentials: "include",
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        setApiError(data.message || "Invalid email or password");
-        return;
+      let data;
+      if (role === "admin") {
+        data = await adminAPI.login(formData.email.trim(), formData.password);
+      } else {
+        data = await studentAPI.login(formData.email.trim(), formData.password);
       }
 
-      login(data.user || { email: formData.email });
-      navigate("/dashboard");
+      // Store token and user info
+      if (role === "admin") {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("adminInfo", JSON.stringify(data.admin));
+        login({ 
+          email: data.admin.email, 
+          name: data.admin.name,
+          role: role
+        });
+      } else {
+        localStorage.setItem("studentToken", data.token);
+        localStorage.setItem("token", data.token); // Also store as token for backward compatibility
+        localStorage.setItem("studentInfo", JSON.stringify(data.student));
+        login({ 
+          email: data.student.email, 
+          name: data.student.name,
+          role: role
+        });
+      }
+      
+      navigate(role === "admin" ? "/admin/dashboard" : "/student/dashboard");
     } catch (err) {
       setApiError(err.message || "Failed to login");
     } finally {
@@ -122,6 +121,23 @@ const LoginPage = () => {
 
         <div className="login-forms">
           <form className="login-form-container" onSubmit={handleSubmit} noValidate>
+            <div className="login-role-selector">
+              <button
+                type="button"
+                className={`login-role-btn ${role === "admin" ? "active" : ""}`}
+                onClick={() => handleRoleChange("admin")}
+              >
+                Admin
+              </button>
+              <button
+                type="button"
+                className={`login-role-btn ${role === "student" ? "active" : ""}`}
+                onClick={() => handleRoleChange("student")}
+              >
+                Student
+              </button>
+            </div>
+
             <div className="login-input-group login-floating">
               <label>Email</label>
               <input
@@ -159,7 +175,7 @@ const LoginPage = () => {
               className="login-submit-btn"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Logging in..." : "Login"}
+              {isSubmitting ? "Logging in..." : `Login as ${role}`}
             </button>
           </form>
         </div>
@@ -167,7 +183,7 @@ const LoginPage = () => {
         <div className="login-already-acc">
           <p>
             Don&apos;t have an account?{" "}
-            <span onClick={() => navigate("/signup")}>Sign up</span>
+            <span onClick={() => navigate("/register")}>Sign up</span>
           </p>
         </div>
 

@@ -74,8 +74,8 @@ const ChatbotPage = () => {
   };
 
   return (
-    <div className="w-screen  bg-[#E8FDFF] h-[90vh] mt-20 lg:w-full ">
-      <div className="h-[98%] w-[98%] lg:w-[78%] lg:ml-12 flex flex-col bg-[#CAECFF] rounded-2xl relative ">
+    <div className="w-screen bg-[#E8FDFF] h-[90vh]  mt-20 lg:w-full">
+      <div className="h-[98%] w-full flex flex-col bg-[#CAECFF] lg:rounded-2xl relative">
         {/* Welcome Text */}
         {!currentChatId && messages.length === 0 && (
           <div className="absolute w-full px-14 py-28 text-center lg:flex lg:flex-col lg:items-center">
@@ -138,12 +138,12 @@ const ChatbotPage = () => {
         </div>
 
         {/* Right Sidebar - Chat List */}
-        <div
+        {/* <div
           className={`fixed top-20 lg:top-20 right-0 lg:right-4 h-[88vh] lg:h-[88.5vh] w-[40%] lg:w-[13%] bg-[#CAECFF] shadow-lg lg:rounded-2xl transition-transform duration-300 ease-in-out flex flex-col p-4 z-9999 ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
           } lg:translate-x-0`}
         >
-          {/* Toggle button - mobile only */}
+         
           <div
             onClick={toggleSidebar}
             className="lg:hidden absolute -left-9 top-5 bg-[#FF993A] text-white w-9 h-9 rounded flex items-center justify-center cursor-pointer font-bold shadow-md z-10000"
@@ -155,7 +155,7 @@ const ChatbotPage = () => {
             )}
           </div>
 
-          {/* Sidebar Content */}
+      
           <div className="flex flex-col gap-4 h-full">
             <p
               onClick={handleNewChat}
@@ -186,7 +186,7 @@ const ChatbotPage = () => {
               ))}
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

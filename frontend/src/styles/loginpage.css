@@ -106,6 +106,35 @@
   margin-top: 4px;
 }
 
+/* Role Selector */
+.login-role-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.login-role-btn {
+  flex: 1;
+  padding: 0.6rem;
+  border: 2px solid #e0e0e0;
+  background-color: #fff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-role-btn:hover {
+  border-color: #ff7a00;
+}
+
+.login-role-btn.active {
+  background-color: #ff7a00;
+  color: white;
+  border-color: #ff7a00;
+}
+
 /* Submit Button */
 .login-submit-btn {
   width: 100%;

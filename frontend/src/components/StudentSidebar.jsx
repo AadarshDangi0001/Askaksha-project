@@ -15,7 +15,7 @@ const StudentSidebar = () => {
            <h3 className="text-gray-500 text-sm font-medium mb-3 px-3">Main</h3>
            <div className="space-y-1">
              <NavLink 
-               to="/dashboard"
+               to="/student/dashboard"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400 transition-colors  ${isActive ? 'bg-blue-500  text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-dashboard-line text-l"></i>
@@ -23,7 +23,7 @@ const StudentSidebar = () => {
              </NavLink>
 
              <NavLink 
-               to="/chatbot"
+               to="/student/chatbot"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-message-2-line text-l"></i>
@@ -31,7 +31,7 @@ const StudentSidebar = () => {
              </NavLink>
 
              <NavLink 
-               to="/bulletboard"
+               to="/student/bulletboard"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-book-open-line text-l"></i>
@@ -39,7 +39,7 @@ const StudentSidebar = () => {
              </NavLink>
 
              <NavLink 
-               to="/scan-docs"
+               to="/student/scan-docs"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-camera-line text-l"></i>
@@ -47,7 +47,7 @@ const StudentSidebar = () => {
              </NavLink>
 
              <NavLink 
-               to="/whatsapp-bot"
+               to="/student/whatsapp-bot"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-wechat-2-line text-l"></i>
@@ -55,7 +55,7 @@ const StudentSidebar = () => {
              </NavLink>
 
              <NavLink 
-               to="/volunteer"
+               to="/student/volunteer"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-wechat-line text-l"></i>
@@ -65,7 +65,7 @@ const StudentSidebar = () => {
              
 
              <NavLink 
-               to="/offline-bot"
+               to="/student/offline-bot"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-wifi-off-line text-l"></i>
@@ -74,7 +74,7 @@ const StudentSidebar = () => {
            </div>
            <div className="space-y-1">
              <NavLink 
-               to="/agentic"
+               to="/student/agentic"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-computer-line text-l"></i>
@@ -82,7 +82,7 @@ const StudentSidebar = () => {
              </NavLink>
 
              <NavLink 
-               to="/about"
+               to="/student/about"
                className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
              >
                <i className="ri-notification-line text-l"></i>
@@ -98,7 +98,7 @@ const StudentSidebar = () => {
        {/* Settings at Bottom */}
        <div className="mt-auto pt-4 mb-4 border-t border-gray-800">
          <NavLink 
-           to="/settings"
+           to="/student/settings"
            className={({isActive}) => `flex items-center gap-4 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-blue-400  transition-colors ${isActive ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
          >
            <i className="ri-settings-2-line text-l"></i>

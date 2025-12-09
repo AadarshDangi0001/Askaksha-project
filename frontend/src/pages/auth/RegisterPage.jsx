@@ -1,27 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { adminAPI, studentAPI } from "../../services/api";
 import "../../styles/registerpage.css";
-
-const SIGNUP_API_URL = "https://your-backend.com/api/auth/signup";
-const USE_BACKEND = false;
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { signup } = useAuth();
 
+  const [role, setRole] = useState("student");
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    fullName: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    collegeCode: "",
     agree: false,
   });
 
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRoleChange = (selectedRole) => {
+    setRole(selectedRole);
+    setErrors({});
+    setApiError("");
+    if (selectedRole === "admin") {
+      setFormData(prev => ({ ...prev, collegeCode: "" }));
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -40,8 +47,7 @@ const RegisterPage = () => {
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
+    if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
@@ -54,10 +60,9 @@ const RegisterPage = () => {
     else if (formData.password.length < 6)
       newErrors.password = "Password must be at least 6 characters";
 
-    if (!formData.confirmPassword)
-      newErrors.confirmPassword = "Please confirm your password";
-    else if (formData.confirmPassword !== formData.password)
-      newErrors.confirmPassword = "Passwords do not match";
+    if (role === "student" && !formData.collegeCode.trim()) {
+      newErrors.collegeCode = "College code is required";
+    }
 
     if (!formData.agree)
       newErrors.agree = "You must accept Terms & Privacy Policies";
@@ -77,45 +82,47 @@ const RegisterPage = () => {
 
     setIsSubmitting(true);
 
-    if (!USE_BACKEND) {
-      console.log("Mock signup :", formData);
-      const userData = {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName
-      };
-      signup(userData);
-      navigate("/dashboard");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      const response = await fetch(SIGNUP_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          email: formData.email.trim(),
-          password: formData.password,
-        }),
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setApiError(data.message || "Something went wrong. Please try again.");
-        return;
+      let data;
+      if (role === "admin") {
+        data = await adminAPI.register(
+          formData.fullName.trim(),
+          formData.email.trim(), 
+          formData.password
+        );
+      } else {
+        data = await studentAPI.register(
+          formData.fullName.trim(),
+          formData.email.trim(),
+          formData.password,
+          formData.collegeCode.trim()
+        );
       }
 
-      signup(data.user || { 
-        email: formData.email, 
-        firstName: formData.firstName, 
-        lastName: formData.lastName 
-      });
-      navigate("/dashboard");
+      // Store token and user info
+      if (role === "admin") {
+        localStorage.setItem("token", data.token || "");
+        localStorage.setItem("adminInfo", JSON.stringify(data.admin));
+        if (data.collegeCode) {
+          localStorage.setItem("collegeCode", data.collegeCode);
+        }
+        signup({ 
+          email: data.admin.email, 
+          name: data.admin.name,
+          role: role
+        });
+      } else {
+        localStorage.setItem("studentToken", data.token || "");
+        localStorage.setItem("token", data.token || ""); // Also store as token for backward compatibility
+        localStorage.setItem("studentInfo", JSON.stringify(data.student));
+        signup({ 
+          email: data.student.email, 
+          name: data.student.name,
+          role: role
+        });
+      }
+      
+      navigate(role === "admin" ? "/admin/dashboard" : "/student/dashboard");
     } catch (err) {
       setApiError(err.message || "Failed to create account");
     } finally {
@@ -138,30 +145,33 @@ const RegisterPage = () => {
 
         <div className="signup-forms">
           <form className="signup-form-container" onSubmit={handleSubmit} noValidate>
-            <div className="signup-name-row">
-              <div className="signup-input-group signup-floating">
-                <label>First Name</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  placeholder="john"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                />
-                {errors.firstName && <span className="signup-error-text">{errors.firstName}</span>}
-              </div>
+            <div className="signup-role-selector">
+              <button
+                type="button"
+                className={`signup-role-btn ${role === "admin" ? "active" : ""}`}
+                onClick={() => handleRoleChange("admin")}
+              >
+                Admin
+              </button>
+              <button
+                type="button"
+                className={`signup-role-btn ${role === "student" ? "active" : ""}`}
+                onClick={() => handleRoleChange("student")}
+              >
+                Student
+              </button>
+            </div>
 
-              <div className="signup-input-group signup-floating">
-                <label>Last Name</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  placeholder="doe"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                />
-                {errors.lastName && <span className="signup-error-text">{errors.lastName}</span>}
-              </div>
+            <div className="signup-input-group signup-floating">
+              <label>Full Name</label>
+              <input
+                type="text"
+                name="fullName"
+                placeholder="John Doe"
+                value={formData.fullName}
+                onChange={handleChange}
+              />
+              {errors.fullName && <span className="signup-error-text">{errors.fullName}</span>}
             </div>
 
             <div className="signup-input-group signup-floating">
@@ -176,6 +186,20 @@ const RegisterPage = () => {
               {errors.email && <span className="signup-error-text">{errors.email}</span>}
             </div>
 
+            {role === "student" && (
+              <div className="signup-input-group signup-floating">
+                <label>College Code</label>
+                <input
+                  type="text"
+                  name="collegeCode"
+                  placeholder="Enter your college code"
+                  value={formData.collegeCode}
+                  onChange={handleChange}
+                />
+                {errors.collegeCode && <span className="signup-error-text">{errors.collegeCode}</span>}
+              </div>
+            )}
+
             <div className="signup-input-group signup-floating">
               <label>Password</label>
               <input
@@ -186,20 +210,6 @@ const RegisterPage = () => {
                 onChange={handleChange}
               />
               {errors.password && <span className="signup-error-text">{errors.password}</span>}
-            </div>
-
-            <div className="signup-input-group signup-floating">
-              <label>Confirm Password</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                placeholder="•••••••••••"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-              />
-              {errors.confirmPassword && (
-                <span className="signup-error-text">{errors.confirmPassword}</span>
-              )}
             </div>
 
             <div className="signup-checkbox-row">
@@ -219,7 +229,7 @@ const RegisterPage = () => {
             {apiError && <div className="signup-api-error">{apiError}</div>}
 
             <button type="submit" className="signup-submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? "Creating account..." : "Create account"}
+              {isSubmitting ? "Creating account..." : `Sign up as ${role}`}
             </button>
           </form>
         </div>
