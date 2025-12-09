@@ -7,7 +7,7 @@
 
   const AskakshaChat = {
     config: {
-      serverUrl: 'http://localhost:5050',
+      serverUrl: window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com',
       collegeCode: '',
       initialized: false
     },
