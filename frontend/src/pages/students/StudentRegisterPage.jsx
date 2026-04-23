@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/registerpage.css';
+import { API_BASE_URL } from '../../config/runtime';
 
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
@@ -14,8 +15,6 @@ const StudentRegisterPage = () => {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,7 +81,7 @@ const StudentRegisterPage = () => {
     try {
       const { confirmPassword, ...registerData } = formData;
 
-      const response = await fetch(`${API_URL}/student/signup`, {
+      const response = await fetch(`${API_BASE_URL}/student/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

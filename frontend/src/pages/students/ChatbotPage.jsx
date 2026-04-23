@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import io from "socket.io-client";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050';
-const SOCKET_URL = API_BASE_URL.replace('/api', '');
+import { SOCKET_URL } from '../../config/runtime';
 
 // Format text with markdown-style formatting
 const formatText = (text) => {

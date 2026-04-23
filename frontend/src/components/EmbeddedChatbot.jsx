@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import { SOCKET_URL } from '../config/runtime';
 
 const EmbeddedChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,8 +21,7 @@ const EmbeddedChatbot = () => {
   useEffect(() => {
     if (isOpen && !socket) {
       const token = localStorage.getItem('studentToken') || localStorage.getItem('token');
-      const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com';
-      const newSocket = io(socketUrl, {
+      const newSocket = io(SOCKET_URL, {
         auth: { token }
       });
 

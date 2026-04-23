@@ -5,9 +5,31 @@
 (function(window) {
   'use strict';
 
+  function resolveDefaultServerUrl() {
+    const explicitUrl = window.AskakshaConfig?.serverUrl || window.CHATBOT_SERVER_URL;
+    if (explicitUrl) {
+      return explicitUrl.replace(/\/+$/, '');
+    }
+
+    if (document.currentScript?.src) {
+      try {
+        return new URL(document.currentScript.src, window.location.href).origin;
+      } catch (error) {
+        console.warn('Could not parse script URL origin:', error);
+      }
+    }
+
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return 'http://localhost:5050';
+    }
+
+    return 'https://askaksha-project.onrender.com';
+  }
+
   const AskakshaChat = {
     config: {
-      serverUrl: window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com',
+      serverUrl: resolveDefaultServerUrl(),
       collegeCode: '',
       initialized: false
     },

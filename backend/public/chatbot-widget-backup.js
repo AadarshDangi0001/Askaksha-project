@@ -1,6 +1,28 @@
 (function() {
   'use strict';
 
+  function resolveServerOrigin() {
+    const explicitUrl = window.AskakshaConfig?.serverUrl || window.CHATBOT_SERVER_URL;
+    if (explicitUrl) {
+      return explicitUrl.replace(/\/+$/, '');
+    }
+
+    if (document.currentScript?.src) {
+      try {
+        return new URL(document.currentScript.src, window.location.href).origin;
+      } catch (error) {
+        console.warn('Could not parse script URL origin:', error);
+      }
+    }
+
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return 'http://localhost:5050';
+    }
+
+    return 'https://askaksha-project.onrender.com';
+  }
+
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initWidget);
@@ -10,11 +32,12 @@
 
   function initWidget() {
     // Configuration
+    const serverOrigin = resolveServerOrigin();
     const CONFIG = {
-    API_URL: window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com',
-    SOCKET_URL: window.location.hostname === 'localhost' ? 'http://localhost:5050' : 'https://askaksha-project.onrender.com',
-    collegeCode: window.CHATBOT_COLLEGE_CODE || 'GUEST',
-  };
+      API_URL: serverOrigin,
+      SOCKET_URL: serverOrigin,
+      collegeCode: window.CHATBOT_COLLEGE_CODE || 'GUEST',
+    };
 
   // Create widget styles
   const styles = `

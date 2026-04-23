@@ -114,7 +114,7 @@
     <div class="info-box">
       <h3>🔧 Technical Details:</h3>
       <p>• <strong>College Code:</strong> <code>DEMO_COLLEGE_001</code></p>
-      <p>• <strong>Server:</strong> <code>http://localhost:5050</code></p>
+      <p>• <strong>Server:</strong> <code id="server-url">Detecting...</code></p>
       <p>• <strong>Mode:</strong> Guest (auto-authentication)</p>
     </div>
 
@@ -122,17 +122,28 @@
   </div>
 
   <!-- Askaksha AI Chatbot -->
-  <script src="http://localhost:5050/embed-chatbot.js"></script>
   <script>
-    AskakshaChat.init({
-      collegeCode: 'DEMO_COLLEGE_001',
-      serverUrl: 'http://localhost:5050'
-    });
+    const SERVER_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:5050'
+      : 'https://askaksha-project.onrender.com';
 
-    console.log('🤖 Askaksha Chatbot initialized with config:', {
-      collegeCode: 'DEMO_COLLEGE_001',
-      serverUrl: 'http://localhost:5050'
-    });
+    document.getElementById('server-url').textContent = SERVER_URL;
+
+    const chatbotScript = document.createElement('script');
+    chatbotScript.src = `${SERVER_URL}/embed-chatbot.js`;
+    chatbotScript.onload = () => {
+      AskakshaChat.init({
+        collegeCode: 'DEMO_COLLEGE_001',
+        serverUrl: SERVER_URL
+      });
+
+      console.log('🤖 Askaksha Chatbot initialized with config:', {
+        collegeCode: 'DEMO_COLLEGE_001',
+        serverUrl: SERVER_URL
+      });
+    };
+
+    document.body.appendChild(chatbotScript);
   </script>
 </body>
 </html>
