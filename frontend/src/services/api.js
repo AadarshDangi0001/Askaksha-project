@@ -75,6 +75,14 @@ export const adminAPI = {
       headers: getAuthHeaders()
     });
     return handleResponse(response);
+  },
+
+  toggleVolunteer: async (studentId) => {
+    const response = await fetch(`${API_BASE_URL}/auth/students/${studentId}/volunteer`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
   }
 };
 
@@ -150,6 +158,42 @@ export const studentAPI = {
   }
 };
 
+export const volunteerAPI = {
+  submitQuestion: async (question) => {
+    const response = await fetch(`${API_BASE_URL}/student/volunteer/questions`, {
+      method: 'POST',
+      headers: getStudentAuthHeaders(),
+      body: JSON.stringify({ question })
+    });
+    return handleResponse(response);
+  },
+
+  getMyQuestions: async () => {
+    const response = await fetch(`${API_BASE_URL}/student/volunteer/questions`, {
+      method: 'GET',
+      headers: getStudentAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
+  getAssignedQuestions: async () => {
+    const response = await fetch(`${API_BASE_URL}/student/volunteer/assigned`, {
+      method: 'GET',
+      headers: getStudentAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
+  replyToQuestion: async (questionId, reply) => {
+    const response = await fetch(`${API_BASE_URL}/student/volunteer/questions/${questionId}/reply`, {
+      method: 'POST',
+      headers: getStudentAuthHeaders(),
+      body: JSON.stringify({ reply })
+    });
+    return handleResponse(response);
+  }
+};
+
 export const chatAPI = {
   getHistory: async () => {
     const response = await fetch(`${API_BASE_URL}/chat/history`, {
@@ -187,6 +231,7 @@ export default {
   admin: adminAPI,
   college: collegeAPI,
   student: studentAPI,
+  volunteer: volunteerAPI,
   chat: chatAPI,
   chatbot: chatbotAPI
 };

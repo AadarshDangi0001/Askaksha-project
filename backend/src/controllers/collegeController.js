@@ -1,4 +1,5 @@
 const College = require("../models/College");
+const collegeService = require("../services/collegeService");
 
 // Save or Update College
 exports.saveCollege = async (req, res) => {
@@ -26,7 +27,7 @@ exports.saveCollege = async (req, res) => {
 // Get College Details
 exports.getCollege = async (req, res) => {
   try {
-    const data = await College.findOne({ adminId: req.admin.id });
+    const data = await collegeService.getCollegeByAdminId(req.admin.id);
     res.json(data);
   } catch (error) {
     res.status(500).json({ msg: "Server error", error: error.message });

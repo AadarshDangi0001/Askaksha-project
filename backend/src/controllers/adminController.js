@@ -138,7 +138,7 @@ exports.getStudents = async (req, res) => {
 
     const Student = require('../models/Student');
     const students = await Student.find({ collegeCode: admin.collegeCode })
-      .select('name email createdAt')
+      .select('name email createdAt isVolunteer')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -148,6 +148,41 @@ exports.getStudents = async (req, res) => {
     });
   } catch (error) {
     console.error('Get students error:', error);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};
+
+// Mark or unmark a student as a volunteer
+exports.toggleVolunteer = async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.admin.id);
+    if (!admin) {
+      return res.status(404).json({ msg: "Admin not found" });
+    }
+
+    const Student = require('../models/Student');
+    const { studentId } = req.params;
+
+    const student = await Student.findOne({ _id: studentId, collegeCode: admin.collegeCode });
+    if (!student) {
+      return res.status(404).json({ msg: "Student not found" });
+    }
+
+    student.isVolunteer = !student.isVolunteer;
+    await student.save();
+
+    res.json({
+      success: true,
+      message: student.isVolunteer ? 'Volunteer assigned successfully' : 'Volunteer removed successfully',
+      student: {
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        isVolunteer: student.isVolunteer
+      }
+    });
+  } catch (error) {
+    console.error('Toggle volunteer error:', error);
     res.status(500).json({ msg: "Server error", error: error.message });
   }
 };

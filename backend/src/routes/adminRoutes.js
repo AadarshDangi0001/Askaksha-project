@@ -22,4 +22,7 @@ router.get("/logs", auth, getChatLogs);
 // Get All Students
 router.get("/students", auth, adminController.getStudents);
 
+// Assign or remove volunteer role
+router.post("/students/:studentId/volunteer", auth, adminController.toggleVolunteer);
+
 module.exports = router;

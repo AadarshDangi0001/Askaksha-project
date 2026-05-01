@@ -71,7 +71,8 @@ exports.login = async (req, res) => {
         id: student._id,
         name: student.name,
         email: student.email,
-        collegeCode: student.collegeCode
+        collegeCode: student.collegeCode,
+        isVolunteer: student.isVolunteer
       }
     });
   } catch (error) {
@@ -92,7 +93,8 @@ exports.getDashboard = async (req, res) => {
       studentName: student.name,
       collegeName: college ? college.name : "College",
       collegeCode: student.collegeCode,
-      college: college || null
+      college: college || null,
+      isVolunteer: !!student.isVolunteer
     });
   } catch (error) {
     res.status(500).json({ msg: "Server error", error: error.message });

@@ -6,6 +6,7 @@ const AssignVolunteer = () => {
   const [volunteers, setVolunteers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [togglingId, setTogglingId] = useState(null);
 
   // Load students from backend
   useEffect(() => {
@@ -19,13 +20,12 @@ const AssignVolunteer = () => {
       const response = await adminAPI.getStudents();
       
       if (response.success && response.students) {
-        // Map students to volunteers format
         const studentsData = response.students.map(student => ({
           id: student._id,
           name: student.name,
           email: student.email,
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=3B7DDD&color=ffffff`,
-          assigned: false,
+          assigned: !!student.isVolunteer,
         }));
         setVolunteers(studentsData);
       } else {
@@ -40,31 +40,29 @@ const AssignVolunteer = () => {
     }
   };
 
-  // Add new volunteer from input (removed - now showing only real students)
   const handleSendMessage = (e) => {
     e.preventDefault();
     const trimmed = message.trim();
     if (!trimmed) return;
-
-    // Filter students by search
-    const filtered = volunteers.filter(v => 
-      v.name.toLowerCase().includes(trimmed.toLowerCase()) ||
-      v.email.toLowerCase().includes(trimmed.toLowerCase())
-    );
-    
     setMessage("");
   };
 
-  const handleAssignToggle = (id) => {
-    setVolunteers((prev) =>
-      prev.map((v) =>
-        v.id === id ? { ...v, assigned: !v.assigned } : v
-      )
-    );
-  };
-
-  const handleDelete = (id) => {
-    setVolunteers((prev) => prev.filter((v) => v.id !== id));
+  const handleAssignToggle = async (id) => {
+    try {
+      setTogglingId(id);
+      const response = await adminAPI.toggleVolunteer(id);
+      if (response.success && response.student) {
+        setVolunteers((prev) =>
+          prev.map((v) =>
+            v.id === id ? { ...v, assigned: response.student.isVolunteer } : v
+          )
+        );
+      }
+    } catch (err) {
+      setError(err.message || "Failed to update volunteer status");
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   // Filter volunteers based on search
@@ -148,6 +146,7 @@ const AssignVolunteer = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                   <button
                     onClick={() => handleAssignToggle(user.id)}
+                    disabled={togglingId === user.id}
                     className={`w-full lg:w-auto font-medium rounded-lg px-4 py-3 text-sm transition-colors
                       ${
                         user.assigned
@@ -155,7 +154,11 @@ const AssignVolunteer = () => {
                           : "bg-[#3B7DDD] hover:bg-[#5A97E4] text-white"
                       }`}
                   >
-                    {user.assigned ? "Assigned" : "Assign"}
+                    {togglingId === user.id
+                      ? "Updating..."
+                      : user.assigned
+                        ? "Remove Volunteer"
+                        : "Assign Volunteer"}
                   </button>
                 </div>
               </div>

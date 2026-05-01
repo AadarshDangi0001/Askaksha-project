@@ -37,6 +37,16 @@ const CollegeSchema = new mongoose.Schema({
     date: String,
     description: String
   }],
+
+  // Bulletin board notices shown to admins and students
+  notices: [{
+    title: String,
+    description: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   
   // Facilities
   facilities: [String],

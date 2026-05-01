@@ -1,39 +1,57 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { collegeAPI } from "../../services/api";
 
 const AdminBulletboardPage = () => {
-  const [notices, setNotices] = useState([
-    {
-      id: 101,
-      title: "Library Maintenance",
-      description:
-        "The college library will remain closed on 10 January 2026 due to urgent maintenance work. Students are advised to complete pending book returns and issue requirements before the mentioned date to avoid any inconvenience.",
-      expanded: false,
-    },
-    {
-      id: 102,
-      title: "Exam Fee Reminder",
-      description:
-        "Last date for paying university exam fees without late fine is 25 January 2026. After this date, a late fine of ₹50 per day will be charged. Make sure to complete the payment through the official student portal only.",
-      expanded: false,
-    },
-    {
-      id: 103,
-      title: "Placement Drive - Infosys",
-      description:
-        "Infosys campus placement drive is scheduled for March 2026. Eligible students from CSE, IT, and ECE branches must register on the placement portal before 28 February 2026. Further details regarding test pattern and eligibility will be shared soon.",
-      expanded: false,
-    },
-    {
-      id: 104,
-      title: "Attendance Notice",
-      description:
-        "As per university guidelines, a minimum of 75% attendance is mandatory in both theory and practical classes. Students falling short of required attendance may not be allowed to appear in the semester examinations.",
-      expanded: false,
-    },
-  ]);
+  const [notices, setNotices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
+
+  const normalizeNotice = (notice) => ({
+    id: notice._id || notice.id || Date.now(),
+    title: notice.title || "Untitled Notice",
+    description: notice.description || "",
+    expanded: false,
+  });
+
+  const normalizeNotices = (items = []) => items.map(normalizeNotice);
+
+  const saveNotices = async (nextNotices) => {
+    setIsSaving(true);
+    setError("");
+
+    try {
+      await collegeAPI.update({
+        notices: nextNotices.map(({ id, expanded, ...notice }) => notice),
+      });
+      setNotices(nextNotices);
+    } catch (err) {
+      console.error("Failed to save bulletins:", err);
+      setError(err.message || "Failed to save bulletins");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadCollege = async () => {
+      try {
+        setIsLoading(true);
+        const data = await collegeAPI.getMy();
+        setNotices(normalizeNotices(data?.notices || []));
+      } catch (err) {
+        console.error("Failed to load bulletins:", err);
+        setError(err.message || "Failed to load bulletins");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCollege();
+  }, []);
 
   const toggleReadMore = (id) => {
     setNotices((prev) =>
@@ -43,11 +61,12 @@ const AdminBulletboardPage = () => {
     );
   };
 
-  const handleDelete = (id) => {
-    setNotices((prev) => prev.filter((item) => item.id !== id));
+  const handleDelete = async (id) => {
+    const nextNotices = notices.filter((item) => item.id !== id);
+    await saveNotices(nextNotices);
   };
 
-  const handleAddNotice = (e) => {
+  const handleAddNotice = async (e) => {
     e.preventDefault();
     const title = newTitle.trim();
     const desc = newDescription.trim();
@@ -60,8 +79,7 @@ const AdminBulletboardPage = () => {
       expanded: false,
     };
 
-    // Add new notice on top
-    setNotices((prev) => [newNotice, ...prev]);
+    await saveNotices([newNotice, ...notices]);
     setNewTitle("");
     setNewDescription("");
   };
@@ -82,8 +100,26 @@ const AdminBulletboardPage = () => {
             board.
           </p>
 
+          {error && (
+            <div className="mb-6 rounded-xl bg-red-100 text-red-700 px-4 py-3 text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Notices Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20">
+            {isLoading && (
+              <div className="col-span-full rounded-2xl bg-white/70 px-6 py-10 text-center text-gray-600">
+                Loading notices...
+              </div>
+            )}
+
+            {!isLoading && notices.length === 0 && (
+              <div className="col-span-full rounded-2xl bg-white/70 px-6 py-10 text-center text-gray-600">
+                No notices yet. Add the first bulletin below.
+              </div>
+            )}
+
             {notices.map((notice) => (
               <div
                 key={notice.id}
@@ -92,6 +128,7 @@ const AdminBulletboardPage = () => {
                 {/* Delete Icon */}
                 <button
                   onClick={() => handleDelete(notice.id)}
+                  disabled={isSaving}
                   className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/60 transition-colors"
                 >
                   <i className="ri-delete-bin-6-line text-black text-lg"></i>
@@ -148,9 +185,10 @@ const AdminBulletboardPage = () => {
           {/* Button - 20% on large screens */}
           <button
             type="submit"
+            disabled={isSaving}
             className="w-full lg:w-[20%] bg-[#3B7DDD] hover:bg-[#5A97E4] text-white rounded-lg px-6 py-3 text-sm font-medium transition-colors"
           >
-            Add Notice
+            {isSaving ? "Saving..." : "Add Notice"}
           </button>
         </div>
       </form>

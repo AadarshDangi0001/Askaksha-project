@@ -7,6 +7,7 @@ const StudentSchema = new mongoose.Schema({
   collegeCode: String,
   college: { type: mongoose.Schema.Types.ObjectId, ref: "College" },
   enrollmentNumber: String,
+  isVolunteer: { type: Boolean, default: false },
   isGuest: { type: Boolean, default: false },
   guestId: { type: String, sparse: true }
 }, {

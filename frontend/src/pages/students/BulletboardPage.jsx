@@ -1,38 +1,48 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
+import { studentAPI } from '../../services/api';
 
 const BulletboardPage = () => {
-  const bulletins = [
-    {
-      id: 1,
-      title: "Fees Deadline",
-      description: "Fees submission last date was 30 july 2025 summit it before 30 july otherwise you have to pay 20rs fine per day"
-    },
-    {
-      id: 2,
-      title: "Fees Deadline",
-      description: "Fees submission last date was 30 july 2025 summit it before 30 july otherwise you have to pay 20rs fine per day"
-    },
-    {
-      id: 3,
-      title: "Fees Deadline",
-      description: "Fees submission last date was 30 july 2025 summit it before 30 july otherwise you have to pay 20rs fine per day"
-    },
-    {
-      id: 4,
-      title: "Fees Deadline",
-      description: "Fees submission last date was 30 july 2025 summit it before 30 july otherwise you have to pay 20rs fine per day"
-    },
-    {
-      id: 5,
-      title: "Fees Deadline",
-      description: "Fees submission last date was 30 july 2025 summit it before 30 july otherwise you have to pay 20rs fine per day"
-    },
-    {
-      id: 6,
-      title: "Fees Deadline",
-      description: "Fees submission last date was 30 july 2025 summit it before 30 july otherwise you have to pay 20rs fine per day"
-    }
-  ];
+  const [bulletins, setBulletins] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const normalizeBulletin = (notice) => ({
+    id: notice._id || notice.id || Date.now(),
+    title: notice.title || "Untitled Notice",
+    description: notice.description || "",
+    expanded: false,
+  });
+
+  useEffect(() => {
+    const loadBulletins = async () => {
+      try {
+        setIsLoading(true);
+        const data = await studentAPI.getDashboard();
+        const notices = data?.college?.notices || [];
+        setBulletins(notices.map(normalizeBulletin));
+      } catch (err) {
+        console.error("Failed to load bulletin board:", err);
+        setError(err.message || "Failed to load bulletin board");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBulletins();
+  }, []);
+
+  const toggleReadMore = (id) => {
+    setBulletins((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, expanded: !item.expanded } : item
+      )
+    );
+  };
+
+  const getShortText = (text) => {
+    if (text.length <= 110) return text;
+    return text.substring(0, 110) + "...";
+  };
 
   return (
     <div className="Dashboard mt-15 w-full min-h-screen bg-[#E8FDFF] overflow-y-hidden pb-10">
@@ -61,6 +71,24 @@ const BulletboardPage = () => {
       {/* Bulletins Grid */}
       <div className="BulletinsLower px-4 sm:px-6 lg:px-12 xl:px-16 mt-6 md:mt-8">
         <div className="max-w-6xl mx-auto">
+          {error && (
+            <div className="mb-6 rounded-xl bg-red-100 text-red-700 px-4 py-3 text-sm">
+              {error}
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="rounded-2xl bg-white/70 px-6 py-10 text-center text-gray-600">
+              Loading bulletin notices...
+            </div>
+          )}
+
+          {!isLoading && bulletins.length === 0 && (
+            <div className="rounded-2xl bg-white/70 px-6 py-10 text-center text-gray-600">
+              No notices have been posted by your college yet.
+            </div>
+          )}
+
           <div className="BulletinsGrid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {bulletins.map((bulletin) => (
               <div
@@ -72,12 +100,19 @@ const BulletboardPage = () => {
                     {bulletin.title}
                   </h3>
                   <p className="text-sm text-blue-500 leading-relaxed mb-6">
-                    {bulletin.description}
+                    {bulletin.expanded
+                      ? bulletin.description
+                      : getShortText(bulletin.description)}
                   </p>
                 </div>
-                <button className="bg-[#FF9D5C] hover:bg-[#FF8A3D] text-white font-medium py-2 px-6 rounded-lg transition-colors self-start">
-                  Read more
-                </button>
+                {bulletin.description.length > 110 ? (
+                  <button
+                    onClick={() => toggleReadMore(bulletin.id)}
+                    className="bg-[#FF9D5C] hover:bg-[#FF8A3D] text-white font-medium py-2 px-6 rounded-lg transition-colors self-start"
+                  >
+                    {bulletin.expanded ? "Show less" : "Read more"}
+                  </button>
+                ) : null}
               </div>
             ))}
           </div>
