@@ -60,6 +60,14 @@ const createGuestStudent = async (req, res) => {
       token,
       chatId,
       studentId: guestStudent._id,
+      isGuest: true,
+      student: {
+        _id: guestStudent._id,
+        name: guestStudent.name,
+        email: guestStudent.email,
+        collegeCode: college.code,
+        isGuest: true
+      },
       message: "Guest session created"
     });
   } catch (error) {

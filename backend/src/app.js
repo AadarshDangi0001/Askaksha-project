@@ -53,19 +53,19 @@ app.use("/api", require("./routes/whatsappRoutes"));
 socketHandler(io);
 
 // Initialize WhatsApp Bot
-try {
-  console.log("[App] Initializing WhatsApp Bot...");
-  const whatsappClient = initWhatsAppBot(io);
+// try {
+//   console.log("[App] Initializing WhatsApp Bot...");
+//   const whatsappClient = initWhatsAppBot(io);
   
-  // Store client reference for graceful shutdown
-  app.set('whatsappClient', whatsappClient);
+//   // Store client reference for graceful shutdown
+//   app.set('whatsappClient', whatsappClient);
   
-  console.log("[App] WhatsApp Bot integration enabled");
-  console.log("[App] Bot will respond to messages containing 'askaksha'");
-} catch (error) {
-  console.error("[App] Failed to initialize WhatsApp Bot:", error.message);
-  console.log("[App] Continuing without WhatsApp integration");
-}
+//   console.log("[App] WhatsApp Bot integration enabled");
+//   console.log("[App] Bot will respond to messages containing 'askaksha'");
+// } catch (error) {
+//   console.error("[App] Failed to initialize WhatsApp Bot:", error.message);
+//   console.log("[App] Continuing without WhatsApp integration");
+// }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

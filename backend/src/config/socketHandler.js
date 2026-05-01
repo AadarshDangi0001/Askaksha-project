@@ -50,31 +50,38 @@ module.exports = (io) => {
           return;
         }
 
-        // Create user message and generate vectors in parallel
+        // Create user message first so the chat still works even if vector storage is unavailable
         const userMessage = fileData 
           ? `${maskedContent}\n[Attached file: ${fileName}]`
           : maskedContent;
 
-        const [message, vectors] = await Promise.all([
-          Message.create({
-            user: student._id,
-            chat: chat,
-            content: userMessage,
-            role: "user",
-          }),
-          vectorService.generateVector(maskedContent),
-        ]);
-
-        // Store message in vector memory
-        vectorService.createMemory({
-          vectors,
-          messageId: message._id,
-          metadata: {
-            chat: chat,
-            user: student._id.toString(),
-            text: maskedContent,
-          },
+        const message = await Message.create({
+          user: student._id,
+          chat: chat,
+          content: userMessage,
+          role: "user",
         });
+
+        let vectors = null;
+        try {
+          vectors = await vectorService.generateVector(maskedContent);
+        } catch (error) {
+          console.warn("Vector generation skipped:", error.message);
+        }
+
+        if (vectors) {
+          vectorService.createMemory({
+            vectors,
+            messageId: message._id,
+            metadata: {
+              chat: chat,
+              user: student._id.toString(),
+              text: maskedContent,
+            },
+          }).catch((error) => {
+            console.warn("User memory storage skipped:", error.message);
+          });
+        }
 
         // If file is attached, analyze it first
         let fileAnalysis = "";
@@ -126,14 +133,18 @@ Provide the analysis in a clear format.`;
 
         // Query similar memories and get chat history in parallel
         const [longTermMemory, shortTermMemory] = await Promise.all([
-          // Long-term memory: Retrieve ALL relevant past conversations from Pinecone
-          vectorService.queryMemory({
-            queryVector: vectors,
-            limit: 10,
-            metadata: {
-              user: { $eq: student._id.toString() }
-            },
-          }),
+          vectors
+            ? vectorService.queryMemory({
+                queryVector: vectors,
+                limit: 10,
+                metadata: {
+                  user: { $eq: student._id.toString() }
+                },
+              }).catch((error) => {
+                console.warn("Long-term memory lookup skipped:", error.message);
+                return [];
+              })
+            : Promise.resolve([]),
           // Short-term memory: Last 5 messages from current chat session in MongoDB
           Message
             .find({ chat: chat, user: student._id })
@@ -223,28 +234,28 @@ Use this complete conversation history to provide context-aware responses and re
           originalMessage: detectedLanguage !== 'en' ? result : undefined
         });
 
-        // Save AI response and generate vectors
-        // Store the English version for vector search, but include translated version for user history
-        const [responseMessage, responseVectors] = await Promise.all([
-          Message.create({
-            user: student._id,
-            chat: chat,
-            content: finalResponse, // Store translated response for user
-            role: "model",
-          }),
-          vectorService.generateVector(result), // Use English version for vectors
-        ]);
-
-        // Store AI response in vector memory
-        await vectorService.createMemory({
-          vectors: responseVectors,
-          messageId: responseMessage._id,
-          metadata: {
-            chat: chat,
-            user: student._id.toString(),
-            text: result,
-          },
+        // Save AI response and try to store vectors as a best-effort background task
+        const responseMessage = await Message.create({
+          user: student._id,
+          chat: chat,
+          content: finalResponse, // Store translated response for user
+          role: "model",
         });
+
+        try {
+          const responseVectors = await vectorService.generateVector(result); // Use English version for vectors
+          await vectorService.createMemory({
+            vectors: responseVectors,
+            messageId: responseMessage._id,
+            metadata: {
+              chat: chat,
+              user: student._id.toString(),
+              text: result,
+            },
+          });
+        } catch (error) {
+          console.warn("Response memory storage skipped:", error.message);
+        }
 
       } catch (error) {
         console.error("Error processing AI message:", error);

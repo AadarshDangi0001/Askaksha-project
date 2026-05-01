@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { chatbotAPI } from '../../services/api';
+import io from 'socket.io-client';
+import { API_BASE_URL, SOCKET_URL } from '../../config/runtime';
 import './ChatbotWidget.css';
 
 const ChatbotWidget = ({ collegeCode, externalToken = null }) => {
@@ -10,7 +11,21 @@ const ChatbotWidget = ({ collegeCode, externalToken = null }) => {
   const [authToken, setAuthToken] = useState(null);
   const [studentInfo, setStudentInfo] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [chatId] = useState(() => `chat_${Date.now()}`);
   const messagesEndRef = useRef(null);
+  const fallbackTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+      }
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [socket]);
 
   useEffect(() => {
     if (isOpen && !isAuthenticated) {
@@ -26,20 +41,63 @@ const ChatbotWidget = ({ collegeCode, externalToken = null }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const connectSocket = (token) => {
+    if (socket) {
+      return socket;
+    }
+
+    const newSocket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    newSocket.on('chat-response', (data) => {
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+        fallbackTimeoutRef.current = null;
+      }
+
+      if (data.error) {
+        setMessages((prev) => [...prev, { id: Date.now(), text: `Error: ${data.message}`, sender: 'bot', timestamp: new Date() }]);
+      } else {
+        setMessages((prev) => [...prev, { id: Date.now(), text: data.message, sender: 'bot', timestamp: new Date() }]);
+      }
+
+      setIsLoading(false);
+    });
+
+    newSocket.on('disconnect', () => {
+      setIsLoading(false);
+    });
+
+    setSocket(newSocket);
+    return newSocket;
+  };
+
   const authenticateChatbot = async () => {
     try {
       setIsLoading(true);
-      const data = await chatbotAPI.authenticate(collegeCode, externalToken);
+      const response = await fetch(`${API_BASE_URL}/guest/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collegeCode, externalToken }),
+      });
+
+      const data = await response.json();
 
       if (data.success) {
-        setAuthToken(data.data.token);
-        setStudentInfo(data.data.student);
+        setAuthToken(data.token);
+        setStudentInfo(data.student);
         setIsAuthenticated(true);
+        connectSocket(data.token);
 
         const welcomeMessage = {
           id: Date.now(),
-          text: `Welcome ${data.data.student.name}! ${
-            data.data.isGuest ? 'You are in guest mode.' : ''
+          text: `Welcome ${data.student?.name || 'Guest'}! ${
+            data.isGuest ? 'You are in guest mode.' : ''
           } How can I help you today?`,
           sender: 'bot',
           timestamp: new Date(),
@@ -70,7 +128,7 @@ const ChatbotWidget = ({ collegeCode, externalToken = null }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim() || !isAuthenticated) return;
+    if (!inputMessage.trim() || !isAuthenticated || !socket || !authToken) return;
 
     const userMessage = {
       id: Date.now(),
@@ -83,16 +141,21 @@ const ChatbotWidget = ({ collegeCode, externalToken = null }) => {
     setInputMessage('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const botMessage = {
+    socket.emit('student-message', {
+      content: inputMessage.trim(),
+      chat: chatId,
+      token: authToken,
+    });
+
+    fallbackTimeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+      setMessages((prev) => [...prev, {
         id: Date.now() + 1,
-        text: 'This is a demo response. Connect your AI service here.',
+        text: 'I am having trouble responding right now. Please try again in a moment.',
         sender: 'bot',
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-      setIsLoading(false);
-    }, 1000);
+      }]);
+    }, 15000);
   };
 
   const toggleChatbot = () => {
