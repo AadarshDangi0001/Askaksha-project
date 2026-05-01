@@ -126,8 +126,6 @@ const VolunteerPage = () => {
 
   const renderQuestionCard = (question) => {
     const replies = question.replies || [];
-    const assignedVolunteerId = String(question.assignedVolunteer?._id || question.assignedVolunteer || "");
-    const canReply = isVolunteer && (!assignedVolunteerId || assignedVolunteerId === String(currentStudentId || ""));
     const isOwnQuestion = currentStudentId && String(question.student?._id || question.student || "") === String(currentStudentId);
     const repliesOpen = !!openReplies[question._id];
     const replyBoxOpen = !!openReplyBox[question._id];
@@ -175,18 +173,11 @@ const VolunteerPage = () => {
             ) : (
               <button
                 type="button"
-                onClick={canReply ? () => handleVolunteerReplyAction(question._id) : undefined}
-                disabled={!canReply}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${canReply ? 'bg-[#FF9D5C] text-white hover:bg-[#FF8A3D]' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                onClick={() => handleVolunteerReplyAction(question._id)}
+                className="rounded-full px-4 py-2 text-sm font-semibold transition-colors bg-[#FF9D5C] text-white hover:bg-[#FF8A3D]"
               >
                 Reply
               </button>
-            )}
-
-            {isVolunteer && !canReply && (
-              <span className="text-xs text-gray-500">
-                {assignedVolunteerId ? "Assigned to another volunteer" : "Not assigned yet"}
-              </span>
             )}
           </div>
 
@@ -212,7 +203,7 @@ const VolunteerPage = () => {
             </div>
           )}
 
-          {isVolunteer && replyBoxOpen && canReply && (
+          {isVolunteer && replyBoxOpen && (
             <div className="mt-5 rounded-3xl border border-[#FFD3AD] bg-[#FFF7ED] p-4">
               <textarea
                 value={replyDrafts[question._id] || ""}
@@ -245,7 +236,7 @@ const VolunteerPage = () => {
             <p className="text-xs uppercase tracking-[0.25em] text-white/80 font-semibold">Volunteer Help</p>
             <h2 className="text-2xl lg:text-4xl font-bold leading-tight">Shared questions for your college</h2>
             <p className="text-white/90 text-sm lg:text-base">
-              Everyone in your college can see the questions. Students can check replies, and volunteers can answer the questions they are assigned.
+              Everyone in your college can see the questions. Students can check replies, and any volunteer can answer any question.
             </p>
             {isVolunteer && (
               <p className="inline-flex w-fit rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">
