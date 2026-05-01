@@ -17,6 +17,7 @@ router.get("/dashboard", auth, studentController.getDashboard);
 // Volunteer help for students
 router.post("/volunteer/questions", auth, volunteerController.submitQuestion);
 router.get("/volunteer/questions", auth, volunteerController.getStudentQuestions);
+router.get("/volunteer/feed", auth, volunteerController.getCollegeFeed);
 router.get("/volunteer/assigned", volunteerAuth, volunteerController.getVolunteerInbox);
 router.post("/volunteer/questions/:questionId/reply", volunteerAuth, volunteerController.replyToQuestion);
 

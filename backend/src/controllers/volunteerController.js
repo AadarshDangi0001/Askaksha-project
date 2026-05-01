@@ -97,6 +97,27 @@ exports.getVolunteerInbox = async (req, res) => {
   }
 };
 
+exports.getCollegeFeed = async (req, res) => {
+  try {
+    const student = await Student.findById(req.student.id).select("collegeCode");
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    const questions = await VolunteerQuestion.find({ collegeCode: student.collegeCode })
+      .populate("student", "name email collegeCode")
+      .populate("assignedVolunteer", "name email")
+      .populate("replies.volunteer", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, questions });
+  } catch (error) {
+    console.error("Get college volunteer feed error:", error);
+    res.status(500).json({ success: false, message: "Failed to load volunteer feed" });
+  }
+};
+
 exports.replyToQuestion = async (req, res) => {
   try {
     const { questionId } = req.params;

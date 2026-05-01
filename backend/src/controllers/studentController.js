@@ -90,6 +90,7 @@ exports.getDashboard = async (req, res) => {
     const college = await collegeService.getCollegeByAdminId(admin._id);
     
     res.json({
+      studentId: student._id,
       studentName: student.name,
       collegeName: college ? college.name : "College",
       collegeCode: student.collegeCode,

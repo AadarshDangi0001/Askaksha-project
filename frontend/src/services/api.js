@@ -159,6 +159,14 @@ export const studentAPI = {
 };
 
 export const volunteerAPI = {
+  getCollegeFeed: async () => {
+    const response = await fetch(`${API_BASE_URL}/student/volunteer/feed`, {
+      method: 'GET',
+      headers: getStudentAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
   submitQuestion: async (question) => {
     const response = await fetch(`${API_BASE_URL}/student/volunteer/questions`, {
       method: 'POST',
