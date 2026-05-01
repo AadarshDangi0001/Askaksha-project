@@ -12,6 +12,7 @@ const StudentLoginPage = () => {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -113,21 +114,48 @@ const StudentLoginPage = () => {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={errors.password ? 'error' : ''}
-              placeholder="Enter your password"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={errors.password ? 'error' : ''}
+                placeholder="Enter your password"
+                style={{ paddingRight: '44px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                <i className={showPassword ? 'ri-eye-off-line' : 'ri-eye-line'}></i>
+              </button>
+            </div>
             {errors.password && <span className="error-text">{errors.password}</span>}
           </div>
 
           <button type="submit" className="login-btn" disabled={isSubmitting}>
             {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
+
+          <div style={{ marginTop: '14px', padding: '12px', borderRadius: '10px', background: '#f7f7f7', border: '1px solid #e5e5e5' }}>
+            <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: '#374151' }}>Demo Student Credentials</p>
+            <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#4b5563' }}>
+              Email: aadarsh@student.com | Password: aadarsh@student
+            </p>
+          </div>
 
           <div className="login-footer">
             <p>

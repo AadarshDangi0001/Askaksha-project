@@ -26,12 +26,21 @@ exports.signup = async (req, res) => {
     const hashedPass = await bcrypt.hash(password, 10);
 
     student = await Student.create({ name, email, password: hashedPass, collegeCode });
+    const token = jwt.sign(
+      { student: { id: student._id } },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.status(201).json({ 
       msg: "Account created successfully",
+      token,
       student: {
         id: student._id,
         name: student.name,
-        email: student.email
+        email: student.email,
+        collegeCode: student.collegeCode,
+        isVolunteer: student.isVolunteer
       }
     });
   } catch (error) {

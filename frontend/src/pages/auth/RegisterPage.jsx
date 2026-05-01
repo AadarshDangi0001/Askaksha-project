@@ -20,6 +20,7 @@ const RegisterPage = () => {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRoleChange = (selectedRole) => {
     setRole(selectedRole);
@@ -203,12 +204,21 @@ const RegisterPage = () => {
             <div className="signup-input-group signup-floating">
               <label>Password</label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="•••••••••••"
                 value={formData.password}
                 onChange={handleChange}
+                className="signup-input-with-toggle"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="signup-password-toggle"
+              >
+                <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"}></i>
+              </button>
               {errors.password && <span className="signup-error-text">{errors.password}</span>}
             </div>
 
@@ -241,17 +251,6 @@ const RegisterPage = () => {
           </p>
         </div>
 
-        <div className="signup-with">
-          <div className="signup-line"></div>
-          <p>or Sign up with</p>
-          <div className="signup-line"></div>
-        </div>
-
-        <div className="signup-google">
-          <div className="signup-img-container">
-            <img src="/imgs/google.png" alt="" />
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -88,6 +88,23 @@
     font-size: 0.75rem;
     color: #555;
     pointer-events: none;
+    z-index: 2;
+}
+
+.signup-input-with-toggle {
+    padding-right: 2.8rem !important;
+}
+
+.signup-password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #6b7280;
+    z-index: 3;
 }
 
 .signup-input-group input {

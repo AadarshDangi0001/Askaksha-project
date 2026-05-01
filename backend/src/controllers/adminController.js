@@ -22,13 +22,21 @@ exports.signup = async (req, res) => {
     const collegeCode = "CLG" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
     admin = await Admin.create({ name, email, password: hashedPass, collegeCode });
+    const token = jwt.sign(
+      { admin: { id: admin._id } },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.status(201).json({ 
       msg: "Account created successfully", 
+      token,
       collegeCode,
       admin: {
         id: admin._id,
         name: admin.name,
-        email: admin.email
+        email: admin.email,
+        collegeCode: admin.collegeCode
       }
     });
   } catch (error) {

@@ -17,6 +17,7 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRoleChange = (selectedRole) => {
     setRole(selectedRole);
@@ -156,13 +157,22 @@ const LoginPage = () => {
             <div className="login-input-group login-floating">
               <label>Password</label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="•••••••••••"
                 value={formData.password}
                 onChange={handleChange}
                 aria-invalid={!!errors.password}
+                className="login-input-with-toggle"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="login-password-toggle"
+              >
+                <i className={showPassword ? "ri-eye-off-line" : "ri-eye-line"}></i>
+              </button>
               {errors.password && (
                 <span className="login-error-text">{errors.password}</span>
               )}
@@ -187,16 +197,14 @@ const LoginPage = () => {
           </p>
         </div>
 
-        <div className="login-with">
-          <div className="login-line"></div>
-          <p>or Login with</p>
-          <div className="login-line"></div>
-        </div>
-
-        <div className="login-google">
-          <div className="login-img-container">
-            <img src="/imgs/google.png" alt="" />
-          </div>
+        <div style={{ marginTop: "16px", padding: "12px", borderRadius: "10px", background: "#f7f7f7", border: "1px solid #e5e5e5" }}>
+          <p style={{ margin: 0, fontWeight: 600, fontSize: "13px", color: "#374151" }}>Demo Credentials</p>
+          <p style={{ margin: "6px 0 2px 0", fontSize: "12px", color: "#4b5563" }}>
+            Admin: email - iit@admin.com | password - iit@admin
+          </p>
+          <p style={{ margin: 0, fontSize: "12px", color: "#4b5563" }}>
+            Student: email - aadarsh@student.com | password - aadarsh@student
+          </p>
         </div>
       </div>
     </div>
